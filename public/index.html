@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trading Terminal PRO - Mobile Friendly</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
+    <style>
+        .up { color: #22c55e; } .down { color: #ef4444; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        .pulse { animation: pulse 0.3s ease-in-out; }
+        .chat-slide { display: none; }
+        .chat-slide.active { display: block; }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 10px; }
+        /* Altura fija para la gráfica en móviles */
+        #chart-container { height: 350px; }
+        @media (min-width: 1024px) { #chart-container { height: 100%; } }
+    </style>
+</head>
+<body class="bg-black text-white min-h-screen font-sans">
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-2 p-2 h-auto lg:h-screen lg:overflow-hidden">
+        
+        <aside class="col-span-1 lg:col-span-2 bg-zinc-900 rounded-xl border border-zinc-800 flex flex-col p-4">
+            <h2 class="text-blue-500 font-bold mb-4 lg:mb-6 italic">TERMINAL v1</h2>
+            <nav class="flex lg:flex-col gap-2 overflow-x-auto lg:overflow-x-visible">
+                <details class="group min-w-[150px] lg:min-w-0">
+                    <summary class="list-none cursor-pointer p-2 hover:bg-zinc-800 rounded flex justify-between items-center text-sm font-semibold">
+                        Activos <span class="group-open:rotate-180 transition-transform">▼</span>
+                    </summary>
+                    <div class="pl-4 py-2 text-xs text-zinc-500 space-y-2">
+                        <p class="hover:text-white cursor-pointer">AAPL</p>
+                        <p class="hover:text-white cursor-pointer">TSLA</p>
+                    </div>
+                </details>
+                <details class="group min-w-[150px] lg:min-w-0">
+                    <summary class="list-none cursor-pointer p-2 hover:bg-zinc-800 rounded flex justify-between items-center text-sm font-semibold">
+                        Ajustes <span class="group-open:rotate-180 transition-transform">▼</span>
+                    </summary>
+                    <div class="pl-4 py-2 text-xs text-zinc-500">Red: OK</div>
+                </details>
+            </nav>
+        </aside>
+
+        <main class="col-span-1 lg:col-span-7 flex flex-col gap-2">
+            <div class="relative bg-zinc-950 rounded-xl border border-zinc-800 h-[400px] lg:h-2/3 overflow-hidden">
+                <div id="card-aapl" class="absolute top-2 left-2 z-10 bg-black/70 backdrop-blur-md p-3 rounded-xl border border-zinc-700 w-40 lg:w-48">
+                    <div class="flex justify-between items-center">
+                        <span class="text-base lg:text-lg font-bold">AAPL</span>
+                        <span id="latency" class="text-[8px] text-zinc-500">--ms</span>
+                    </div>
+                    <div id="price" class="text-xl lg:text-2xl font-mono font-bold">$0.00</div>
+                    <div id="status" class="text-[7px] uppercase text-zinc-500 mt-1">Conectando...</div>
+                </div>
+                <div id="chart-container" class="w-full"></div>
+            </div>
+
+            <div class="bg-zinc-900 rounded-xl border border-zinc-800 p-2">
+                <details class="group" open>
+                    <summary class="list-none cursor-pointer p-2 flex justify-between items-center text-[10px] font-bold uppercase tracking-widest">
+                        Data Empresa <span class="group-open:rotate-180">▼</span>
+                    </summary>
+                    <div class="p-3 grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
+                        <div class="text-zinc-500">CEO: <span class="text-white">Tim Cook</span></div>
+                        <div class="text-zinc-500">Sede: <span class="text-white">Cupertino</span></div>
+                    </div>
+                </details>
+            </div>
+
+            <div class="hidden lg:flex bg-blue-900/10 border border-blue-500/20 rounded-xl flex-1 items-center justify-center italic text-blue-400 text-xs text-center p-4">
+                Métricas de Volumen Avanzadas
+            </div>
+        </main>
+
+        <aside class="col-span-1 lg:col-span-3 flex flex-col gap-2 pb-4 lg:pb-0">
+            <div class="bg-zinc-900 rounded-xl border border-zinc-800 h-[300px] lg:h-1/2 flex flex-col overflow-hidden">
+                <div class="flex border-b border-zinc-800 text-[9px] font-bold uppercase">
+                    <button onclick="switchChat('general')" id="tab-general" class="flex-1 p-3 bg-zinc-800">General</button>
+                    <button onclick="switchChat('activo')" id="tab-activo" class="flex-1 p-3 hover:bg-zinc-800">AAPL Chat</button>
+                </div>
+                <div class="flex-1 p-4 overflow-y-auto text-xs">
+                    <div id="chat-general" class="chat-slide active text-zinc-400 italic">Cargando mensajes globales...</div>
+                    <div id="chat-activo" class="chat-slide text-zinc-400 italic">Esperando actividad de Apple...</div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 h-24 lg:flex-1 text-[9px] uppercase font-bold text-center">
+                <div class="bg-emerald-900/10 border border-emerald-500/20 rounded-xl flex items-center justify-center text-emerald-500">Vol 24h</div>
+                <div class="bg-emerald-900/10 border border-emerald-500/20 rounded-xl flex items-center justify-center text-emerald-500">RSI 14</div>
+            </div>
+        </aside>
+
+    </div>
+
+    <script>
+        const API_KEY = 'Q3I6b14c8HL2l_A7faplgnuMTXekxCUU';
+        let socket, chart, candleSeries;
+
+        function switchChat(type) {
+            document.querySelectorAll('.chat-slide').forEach(s => s.classList.remove('active'));
+            document.getElementById('chat-' + type).classList.add('active');
+            document.getElementById('tab-general').classList.toggle('bg-zinc-800', type === 'general');
+            document.getElementById('tab-activo').classList.toggle('bg-zinc-800', type === 'activo');
+        }
+
+        function crearGrafica() {
+            const container = document.getElementById('chart-container');
+            chart = LightweightCharts.createChart(container, {
+                layout: { background: { color: 'transparent' }, textColor: '#d1d1d1' },
+                grid: { vertLines: { color: '#18181b' }, horzLines: { color: '#18181b' } },
+                timeScale: { timeVisible: true, secondsVisible: true },
+                autoSize: true // IMPORTANTE: Hace que la gráfica se ajuste al contenedor
+            });
+            candleSeries = chart.addCandlestickSeries({
+                upColor: '#22c55e', downColor: '#ef4444', borderVisible: false,
+                wickUpColor: '#22c55e', wickDownColor: '#ef4444'
+            });
+
+            // Re-ajustar al cambiar tamaño de pantalla
+            window.addEventListener('resize', () => {
+                chart.applyOptions({ width: container.clientWidth, height: container.clientHeight });
+            });
+
+            iniciarConexion();
+        }
+
+        function iniciarConexion() {
+            socket = new WebSocket('wss://socket.polygon.io/stocks');
+            socket.onopen = () => {
+                document.getElementById('status').innerText = "🔥 LIVE";
+                socket.send(JSON.stringify({ action: 'auth', params: API_KEY }));
+            };
+            socket.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                data.forEach((msg) => {
+                    if (msg.ev === 'status' && msg.status === 'auth_success') {
+                        socket.send(JSON.stringify({ action: 'subscribe', params: 'AM.AAPL,T.AAPL' }));
+                    }
+                    if (msg.ev === 'AM' && candleSeries) {
+                        candleSeries.update({ time: msg.s / 1000, open: msg.o, high: msg.h, low: msg.l, close: msg.c });
+                    }
+                    if (msg.ev === 'T') {
+                        const priceEl = document.getElementById('price');
+                        const oldPrice = parseFloat(priceEl.innerText.replace('$', '')) || 0;
+                        priceEl.innerText = `$${msg.p.toFixed(2)}`;
+                        priceEl.className = `text-xl lg:text-2xl font-mono font-bold pulse ${msg.p >= oldPrice ? 'up' : 'down'}`;
+                        document.getElementById('latency').innerText = `${Date.now() - msg.t}ms`;
+                    }
+                });
+            };
+            socket.onclose = () => setTimeout(iniciarConexion, 1000);
+        }
+        window.onload = crearGrafica;
+    </script>
+</body>
+</html>
