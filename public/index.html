@@ -2,278 +2,761 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trading Terminal PRO v4.0 - SlickCharts Sync</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Trading Terminal PRO v6.0 - TradingView Style</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         
-        * { font-family: 'Inter', sans-serif; }
-        .mono { font-family: 'JetBrains Mono', monospace; }
-        
-        .up { color: #10b981; } 
-        .down { color: #ef4444; }
-        
-        @keyframes pulse-green { 
-            0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
-            50% { box-shadow: 0 0 0 4px rgba(16, 185, 129, 0); }
-        }
-        @keyframes pulse-red { 
-            0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
-            50% { box-shadow: 0 0 0 4px rgba(239, 68, 68, 0); }
+        * { 
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; 
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
         }
         
-        .pulse-up { animation: pulse-green 1s ease-in-out; }
-        .pulse-down { animation: pulse-red 1s ease-in-out; }
+        html, body {
+            margin: 0;
+            padding: 0;
+            background: #000000;
+            color: #ffffff;
+            height: 100%;
+            overflow: hidden;
+        }
         
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: #18181b; }
-        ::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: #52525b; }
+        .up { color: #26a69a !important; }
+        .down { color: #ef5350 !important; }
+        .neutral { color: #787b86 !important; }
         
-        #chart-container { height: 350px; }
-        @media (min-width: 1024px) { #chart-container { height: 100%; } }
+        /* ==========================================
+           LAYOUT PRINCIPAL - FIXED HEADER Y NAVBAR
+           ========================================== */
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            height: 100dvh;
+            position: relative;
+        }
         
-        .ranking-table { max-height: 450px; overflow-y: auto; }
-        
-        .ranking-row {
-            cursor: pointer;
-            transition: all 0.15s ease;
-            display: grid;
-            grid-template-columns: 8% 14% 14% 22% 18% 24%;
-            gap: 4px;
-            padding: 6px 8px;
-            font-size: 10px;
+        /* Header FIJO */
+        .app-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            background: #131722;
+            border-bottom: 1px solid #2a2e39;
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
             align-items: center;
-            border-bottom: 1px solid rgba(63, 63, 70, 0.3);
         }
         
-        .ranking-row:hover { background: rgba(59, 130, 246, 0.1); }
-        .ranking-row.active {
-            background: rgba(59, 130, 246, 0.2);
-            border-left: 3px solid #3b82f6;
+        /* Tabs FIJOS debajo del header */
+        .tabs-wrapper {
+            position: fixed;
+            top: 52px;
+            left: 0;
+            right: 0;
+            z-index: 99;
+            background: #131722;
+            border-bottom: 1px solid #2a2e39;
         }
         
-        .table-header {
-            display: grid;
-            grid-template-columns: 8% 14% 14% 22% 18% 24%;
-            gap: 4px;
-            padding: 8px;
-            font-size: 9px;
-            background: rgba(39, 39, 42, 0.5);
+        .tabs-container {
+            display: flex;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        .tabs-container::-webkit-scrollbar { display: none; }
+        
+        /* Bottom Navigation FIJO */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            display: flex;
+            justify-content: space-around;
+            background: #131722;
+            border-top: 1px solid #2a2e39;
+            padding: 8px 0;
+            padding-bottom: max(8px, env(safe-area-inset-bottom));
+        }
+        
+        /* Content Area con padding para header y navbar fijos */
+        .content-wrapper {
+            flex: 1;
+            margin-top: 96px; /* header (52px) + tabs (44px) */
+            margin-bottom: 70px; /* navbar height */
+            overflow-y: auto;
+            overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        /* Para vistas sin tabs */
+        .content-wrapper-no-tabs {
+            flex: 1;
+            margin-top: 52px;
+            margin-bottom: 70px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        /* ==========================================
+           TABS
+           ========================================== */
+        .tab-btn {
+            padding: 12px 16px;
+            font-size: 13px;
+            font-weight: 500;
+            color: #787b86;
+            white-space: nowrap;
+            border: none;
+            background: none;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        
+        .tab-btn:hover { color: #d1d4dc; }
+        .tab-btn.active { 
+            color: #2962ff; 
+            border-bottom-color: #2962ff;
+        }
+        
+        .tab-special {
+            background: #ef5350;
+            color: white !important;
+            border-radius: 4px;
+            margin: 8px;
+            padding: 6px 12px !important;
+            font-size: 11px !important;
+            font-weight: 600;
+        }
+        
+        /* ==========================================
+           SECTION HEADERS
+           ========================================== */
+        .section-header {
+            padding: 16px 16px 8px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #787b86;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            background: #000;
             position: sticky;
             top: 0;
-            z-index: 10;
+            z-index: 5;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
         
+        .section-count {
+            font-size: 10px;
+            color: #2962ff;
+            font-weight: 500;
+        }
+        
+        /* ==========================================
+           ASSET ITEMS
+           ========================================== */
+        .asset-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            border-bottom: 1px solid rgba(42, 46, 57, 0.5);
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        
+        .asset-item:hover { background: #1e222d; }
+        .asset-item:active { background: #2a2e39; }
+        
+        .asset-rank {
+            width: 24px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #787b86;
+            flex-shrink: 0;
+        }
+        
+        .asset-logo {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: #2a2e39;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+            flex-shrink: 0;
+            font-size: 11px;
+            font-weight: 700;
+            color: #787b86;
+            overflow: hidden;
+        }
+        
+        .asset-info {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .asset-ticker {
+            font-size: 15px;
+            font-weight: 600;
+            color: #ffffff;
+        }
+        
+        .asset-name {
+            font-size: 12px;
+            color: #787b86;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .asset-data {
+            text-align: right;
+            flex-shrink: 0;
+            margin-left: 12px;
+        }
+        
+        .asset-price {
+            font-size: 15px;
+            font-weight: 600;
+            color: #ffffff;
+        }
+        
+        .asset-change {
+            font-size: 12px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 6px;
+        }
+        
+        /* Ver más button */
+        .ver-mas-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 14px;
+            color: #2962ff;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            border-bottom: 1px solid rgba(42, 46, 57, 0.5);
+            background: rgba(41, 98, 255, 0.05);
+        }
+        
+        .ver-mas-btn:hover { background: rgba(41, 98, 255, 0.1); }
+        
+        /* ==========================================
+           NAV ITEMS
+           ========================================== */
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 12px;
+            color: #787b86;
+            font-size: 10px;
+            cursor: pointer;
+            transition: color 0.2s;
+            border: none;
+            background: none;
+        }
+        
+        .nav-item:hover, .nav-item.active { color: #2962ff; }
+        
+        .nav-icon {
+            width: 24px;
+            height: 24px;
+        }
+        
+        /* ==========================================
+           VIEWS
+           ========================================== */
+        .view {
+            display: none;
+            flex-direction: column;
+            height: 100%;
+        }
+        
+        .view.active {
+            display: flex;
+        }
+        
+        /* ==========================================
+           CHART VIEW
+           ========================================== */
+        .chart-header {
+            padding: 16px;
+            background: #131722;
+            border-bottom: 1px solid #2a2e39;
+        }
+        
+        .chart-ticker-large {
+            font-size: 24px;
+            font-weight: 700;
+        }
+        
+        .chart-name {
+            font-size: 13px;
+            color: #787b86;
+            margin-top: 2px;
+        }
+        
+        .chart-price-large {
+            font-size: 32px;
+            font-weight: 700;
+            margin-top: 8px;
+        }
+        
+        .chart-change-row {
+            display: flex;
+            gap: 12px;
+            margin-top: 4px;
+            font-size: 14px;
+        }
+        
+        #chart-container {
+            flex: 1;
+            background: #131722;
+            min-height: 250px;
+        }
+        
+        /* ==========================================
+           CHAT
+           ========================================== */
+        .chat-container {
+            background: #131722;
+            border-top: 1px solid #2a2e39;
+            height: 180px;
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+        }
+        
+        .chat-header {
+            padding: 10px 16px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #787b86;
+            border-bottom: 1px solid #2a2e39;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px 16px;
+            font-size: 12px;
+        }
+        
+        .chat-message {
+            padding: 6px 0;
+            border-bottom: 1px solid rgba(42, 46, 57, 0.3);
+        }
+        
+        .chat-message-user {
+            color: #2962ff;
+            font-weight: 500;
+        }
+        
+        .chat-message-text {
+            color: #d1d4dc;
+            margin-top: 2px;
+        }
+        
+        .chat-message-time {
+            color: #787b86;
+            font-size: 10px;
+        }
+        
+        .chat-input-container {
+            display: flex;
+            padding: 8px 16px;
+            gap: 8px;
+            border-top: 1px solid #2a2e39;
+            flex-shrink: 0;
+        }
+        
+        .chat-input {
+            flex: 1;
+            background: #2a2e39;
+            border: none;
+            border-radius: 20px;
+            padding: 10px 16px;
+            color: white;
+            font-size: 13px;
+            outline: none;
+        }
+        
+        .chat-input::placeholder { color: #787b86; }
+        
+        .chat-send-btn {
+            background: #2962ff;
+            border: none;
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        
+        /* ==========================================
+           SEARCH
+           ========================================== */
+        .search-container {
+            padding: 16px;
+            background: #000;
+        }
+        
+        .search-input {
+            width: 100%;
+            background: #2a2e39;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 16px;
+            color: white;
+            font-size: 15px;
+            outline: none;
+        }
+        
+        .search-input::placeholder { color: #787b86; }
+        
+        /* ==========================================
+           COMMUNITY
+           ========================================== */
+        .community-post {
+            padding: 16px;
+            border-bottom: 1px solid #2a2e39;
+        }
+        
+        .post-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        
+        .post-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #2962ff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+        
+        .post-user {
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .post-time {
+            font-size: 12px;
+            color: #787b86;
+        }
+        
+        .post-content {
+            font-size: 14px;
+            line-height: 1.5;
+            color: #d1d4dc;
+        }
+        
+        /* ==========================================
+           SETTINGS
+           ========================================== */
+        .settings-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px;
+            border-bottom: 1px solid #2a2e39;
+        }
+        
+        .settings-label {
+            font-size: 15px;
+        }
+        
+        .settings-value {
+            color: #787b86;
+            font-size: 14px;
+        }
+        
+        /* ==========================================
+           STATUS
+           ========================================== */
         .status-dot {
             width: 8px;
             height: 8px;
             border-radius: 50%;
             display: inline-block;
         }
-        .status-connected { background: #10b981; animation: pulse-green 2s infinite; }
-        .status-disconnected { background: #ef4444; }
         
-        .latency-badge {
-            font-size: 10px;
-            padding: 2px 6px;
-            border-radius: 4px;
-            background: rgba(16, 185, 129, 0.2);
-            color: #10b981;
+        .status-live { 
+            background: #26a69a; 
+            animation: pulse 2s infinite;
         }
         
-        .index-tab {
-            cursor: pointer;
-            padding: 10px 16px;
-            border-bottom: 2px solid transparent;
-            transition: all 0.2s;
-            font-weight: 600;
-            font-size: 12px;
+        .status-offline { background: #ef5350; }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
         }
-        .index-tab:hover { background: rgba(59, 130, 246, 0.1); }
-        .index-tab.active { 
-            border-bottom-color: #3b82f6; 
-            color: #3b82f6;
-            background: rgba(59, 130, 246, 0.05);
-        }
+        
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #2a2e39; border-radius: 2px; }
     </style>
 </head>
-<body class="bg-zinc-950 text-white min-h-screen">
-    
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 p-3 h-auto lg:h-screen lg:overflow-hidden">
+<body>
+    <div class="app-container">
+        
+        <!-- ========== HEADER FIJO ========== -->
+        <header class="app-header">
+            <div class="flex items-center gap-3">
+                <svg width="28" height="28" viewBox="0 0 36 36" fill="none">
+                    <circle cx="18" cy="18" r="18" fill="#2962FF"/>
+                    <path d="M10 18L16 24L26 12" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <span class="font-bold text-lg">Terminal PRO</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="status-dot status-live" id="status-dot"></span>
+                <span class="text-xs text-[#26a69a]" id="status-text">LIVE</span>
+            </div>
+        </header>
+        
+        <!-- ========== HOME VIEW ========== -->
+        <div id="view-home" class="view active">
             
-        <!-- SIDEBAR IZQUIERDO - RANKINGS -->
-        <aside class="col-span-1 lg:col-span-3 bg-zinc-900/80 rounded-xl border border-zinc-800 flex flex-col overflow-hidden">
-            
-            <!-- Header -->
-            <div class="p-4 border-b border-zinc-800 flex justify-between items-center">
-                <div>
-                    <h2 class="text-blue-500 font-bold text-lg tracking-tight">TERMINAL <span class="text-zinc-500 font-normal text-sm">v4.0</span></h2>
-                    <p class="text-zinc-500 text-[10px] mt-1">Synced with SlickCharts</p>
-                </div>
-                <div class="text-right">
-                    <div class="flex items-center gap-2">
-                        <span class="status-dot status-disconnected" id="connection-dot"></span>
-                        <span id="connection-status" class="text-zinc-400 text-xs">Connecting...</span>
-                    </div>
-                    <div id="latency-display" class="latency-badge mt-1 hidden">--ms</div>
+            <!-- Tabs FIJOS -->
+            <div class="tabs-wrapper">
+                <div class="tabs-container">
+                    <button class="tab-btn tab-special">🔴 Watch List</button>
+                    <button class="tab-btn active" onclick="filterTab('all', this)">ALL</button>
+                    <button class="tab-btn" onclick="filterTab('dow', this)">DOW 30</button>
+                    <button class="tab-btn" onclick="filterTab('nasdaq', this)">NASDAQ 100</button>
+                    <button class="tab-btn" onclick="filterTab('sp500', this)">S&P 500</button>
                 </div>
             </div>
             
-            <!-- Index Tabs -->
-            <div class="flex border-b border-zinc-800">
-                <button onclick="switchIndex('dow')" id="tab-dow" class="index-tab active flex-1">
-                    📊 DOW <span class="text-[9px] text-yellow-500 ml-1">(30)</span>
-                </button>
-                <button onclick="switchIndex('nasdaq')" id="tab-nasdaq" class="index-tab flex-1">
-                    💻 NDX <span class="text-[9px] text-cyan-500 ml-1">(101)</span>
-                </button>
-                <button onclick="switchIndex('sp500')" id="tab-sp500" class="index-tab flex-1">
-                    📈 SPX <span class="text-[9px] text-emerald-500 ml-1">(503)</span>
-                </button>
+            <!-- Content con scroll -->
+            <div class="content-wrapper" id="home-content">
+                <!-- Se llena dinámicamente -->
             </div>
             
-            <!-- Ranking Content -->
-            <div class="flex-1 overflow-hidden flex flex-col">
-                <div class="table-header font-bold text-zinc-400 uppercase tracking-wider">
-                    <div>#</div>
-                    <div>Ticker</div>
-                    <div>Weight</div>
-                    <div>Price</div>
-                    <div>Chg</div>
-                    <div>% Chg</div>
-                </div>
-                <div class="ranking-table flex-1" id="ranking-container">
-                    <p class="text-zinc-500 italic text-center py-8 text-xs">Cargando datos...</p>
-                </div>
-            </div>
+        </div>
+        
+        <!-- ========== CHART VIEW ========== -->
+        <div id="view-chart" class="view">
             
-            <!-- Index Info -->
-            <div class="p-3 border-t border-zinc-800 text-[10px] text-zinc-500">
-                <div class="flex justify-between">
-                    <span>Método:</span>
-                    <span id="weight-method" class="text-cyan-400">--</span>
-                </div>
-                <div class="flex justify-between mt-1">
-                    <span>Total Weight:</span>
-                    <span id="total-weight" class="text-white mono">100.00%</span>
-                </div>
-            </div>
-        </aside>
-
-        <!-- ÁREA PRINCIPAL -->
-        <main class="col-span-1 lg:col-span-6 flex flex-col gap-3">
-            
-            <!-- Gráfico principal -->
-            <div class="relative bg-zinc-900/50 rounded-xl border border-zinc-800 h-[400px] lg:flex-1 overflow-hidden">
-                
-                <!-- Tarjeta flotante -->
-                <div id="card-activo" class="absolute top-3 left-3 z-10 bg-black/90 backdrop-blur-xl p-4 rounded-xl border border-zinc-700/50 w-72">
-                    
-                    <div class="flex justify-between items-start mb-3">
+            <div class="content-wrapper-no-tabs" style="display:flex;flex-direction:column;overflow:hidden;">
+                <div class="chart-header">
+                    <div class="flex justify-between items-start">
                         <div>
-                            <span id="ticker-name" class="text-3xl font-bold mono">--</span>
-                            <p id="company-name" class="text-zinc-400 text-xs mt-1 truncate max-w-[180px]">--</p>
+                            <div class="chart-ticker-large" id="chart-ticker">AAPL</div>
+                            <div class="chart-name" id="chart-name">Apple Inc.</div>
                         </div>
-                        <div id="indices-badges" class="flex gap-1 flex-wrap justify-end max-w-[80px]"></div>
+                        <button onclick="switchView('home')" class="text-[#787b86] p-2">
+                            <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                            </svg>
+                        </button>
                     </div>
-                    
-                    <div class="flex items-baseline gap-3 mb-2">
-                        <div id="price" class="text-4xl font-bold mono">$0.00</div>
-                        <div id="arrow-indicator" class="text-2xl"></div>
+                    <div class="chart-price-large" id="chart-price">$0.00</div>
+                    <div class="chart-change-row">
+                        <span id="chart-change" class="down">-0.00</span>
+                        <span id="chart-pct" class="down">(-0.00%)</span>
                     </div>
-                    
-                    <div class="flex gap-4 mb-3">
-                        <div>
-                            <span class="text-zinc-500 text-[10px] block">Change</span>
-                            <span id="price-change" class="font-semibold mono">+0.00</span>
-                        </div>
-                        <div>
-                            <span class="text-zinc-500 text-[10px] block">% Change</span>
-                            <span id="price-change-percent" class="font-semibold mono">(+0.00%)</span>
-                        </div>
-                    </div>
-                    
-                    <div class="flex justify-between items-center text-[10px] text-zinc-500 border-t border-zinc-700/50 pt-3">
-                        <div id="market-hours-indicator" class="text-yellow-400 font-medium"></div>
-                        <span id="last-trade-time" class="mono">--:--:--</span>
-                    </div>
+                    <div class="flex gap-2 mt-3" id="chart-badges"></div>
                 </div>
                 
-                <div id="chart-container" class="w-full h-full"></div>
-            </div>
-
-            <!-- Panel de datos -->
-            <div class="bg-zinc-900/50 rounded-xl border border-zinc-800 p-4">
-                <div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-xs">
-                    <div>
-                        <span class="text-zinc-500 block text-[10px] uppercase tracking-wider">Sector</span>
-                        <span id="empresa-sector" class="text-white font-medium">--</span>
+                <div id="chart-container"></div>
+                
+                <!-- Chat -->
+                <div class="chat-container">
+                    <div class="chat-header">
+                        <span>💬 Chat en vivo - <span id="chat-ticker">AAPL</span></span>
+                        <span id="chat-count">0 online</span>
                     </div>
-                    <div>
-                        <span class="text-zinc-500 block text-[10px] uppercase tracking-wider">Índices</span>
-                        <span id="empresa-indices" class="text-white font-medium">--</span>
+                    <div class="chat-messages" id="chat-messages">
+                        <div class="chat-message">
+                            <div class="flex justify-between">
+                                <span class="chat-message-user">Sistema</span>
+                                <span class="chat-message-time">ahora</span>
+                            </div>
+                            <div class="chat-message-text">Bienvenido al chat. Comparte tus análisis sobre este activo.</div>
+                        </div>
                     </div>
-                    <div>
-                        <span class="text-zinc-500 block text-[10px] uppercase tracking-wider">Weight Actual</span>
-                        <span id="empresa-weight" class="text-cyan-400 font-medium mono">--</span>
+                    <div class="chat-input-container">
+                        <input type="text" class="chat-input" id="chat-input" placeholder="Escribe un mensaje...">
+                        <button class="chat-send-btn" onclick="sendChatMessage()">
+                            <svg width="18" height="18" fill="white" viewBox="0 0 24 24">
+                                <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                            </svg>
+                        </button>
                     </div>
-                    <div>
-                        <span class="text-zinc-500 block text-[10px] uppercase tracking-wider">Apertura</span>
-                        <span id="empresa-open" class="text-white font-medium mono">$0.00</span>
-                    </div>
-                    <div>
-                        <span class="text-zinc-500 block text-[10px] uppercase tracking-wider">Cierre Anterior</span>
-                        <span id="empresa-prev-close" class="text-white font-medium mono">$0.00</span>
-                    </div>
-                    <div>
-                        <span class="text-zinc-500 block text-[10px] uppercase tracking-wider">Rank en Índice</span>
-                        <span id="empresa-rank" class="text-yellow-400 font-bold">#--</span>
-                    </div>
-                </div>
-            </div>
-        </main>
-
-        <!-- SIDEBAR DERECHO -->
-        <aside class="col-span-1 lg:col-span-3 flex flex-col gap-3">
-            
-            <!-- Log de actividad -->
-            <div class="bg-zinc-900/80 rounded-xl border border-zinc-800 flex-1 flex flex-col overflow-hidden">
-                <div class="p-3 border-b border-zinc-800 flex justify-between items-center">
-                    <span class="text-xs font-bold uppercase tracking-wider text-zinc-400">📋 Activity Log</span>
-                    <button onclick="clearLog()" class="text-[10px] text-zinc-500 hover:text-white transition">Clear</button>
-                </div>
-                <div id="activity-log" class="flex-1 p-3 overflow-y-auto text-[11px] space-y-1">
-                    <p class="text-zinc-500 italic">Iniciando terminal...</p>
-                </div>
-            </div>
-
-            <!-- Stats -->
-            <div class="grid grid-cols-2 gap-3">
-                <div class="bg-zinc-900/80 border border-zinc-800 rounded-xl p-4 text-center">
-                    <div class="text-[10px] text-zinc-500 uppercase tracking-wider">Trades</div>
-                    <div id="trade-count" class="text-2xl font-bold mono text-emerald-500 mt-1">0</div>
-                </div>
-                <div class="bg-zinc-900/80 border border-zinc-800 rounded-xl p-4 text-center">
-                    <div class="text-[10px] text-zinc-500 uppercase tracking-wider">Tickers</div>
-                    <div id="ticker-count" class="text-2xl font-bold mono text-blue-500 mt-1">0</div>
                 </div>
             </div>
             
-            <!-- Market Status -->
-            <div class="bg-zinc-900/80 border border-zinc-800 rounded-xl p-4">
-                <div class="text-[10px] text-zinc-500 uppercase tracking-wider mb-2">Market Status</div>
-                <div id="market-status-detail" class="text-sm font-medium text-yellow-400">--</div>
-                <div id="ny-time" class="text-xs text-zinc-500 mt-1 mono">--</div>
+        </div>
+        
+        <!-- ========== SEARCH VIEW ========== -->
+        <div id="view-search" class="view">
+            <div class="content-wrapper-no-tabs">
+                <div class="search-container">
+                    <input type="text" class="search-input" id="search-input" placeholder="🔍 Buscar ticker o empresa..." oninput="handleSearch(this.value)">
+                </div>
+                <div id="search-results">
+                    <div class="p-4 text-center text-[#787b86]">
+                        Busca cualquier activo por ticker o nombre
+                    </div>
+                </div>
             </div>
-        </aside>
+        </div>
+        
+        <!-- ========== COMMUNITY VIEW ========== -->
+        <div id="view-community" class="view">
+            <div class="tabs-wrapper">
+                <div class="tabs-container">
+                    <button class="tab-btn active">📰 Tendencias</button>
+                    <button class="tab-btn">👥 Siguiendo</button>
+                    <button class="tab-btn">💡 Ideas</button>
+                </div>
+            </div>
+            <div class="content-wrapper" id="community-content">
+                <!-- Posts -->
+            </div>
+        </div>
+        
+        <!-- ========== SETTINGS VIEW ========== -->
+        <div id="view-settings" class="view">
+            <div class="content-wrapper-no-tabs">
+                <div class="section-header">CUENTA</div>
+                <div class="settings-item">
+                    <span class="settings-label">Usuario</span>
+                    <span class="settings-value">DonTrading_Pro</span>
+                </div>
+                <div class="settings-item">
+                    <span class="settings-label">Plan</span>
+                    <span class="settings-value" style="color: #f7931a;">⭐ Polygon PRO</span>
+                </div>
+                
+                <div class="section-header">CONEXIÓN EN TIEMPO REAL</div>
+                <div class="settings-item">
+                    <span class="settings-label">Fuente de datos</span>
+                    <span class="settings-value">Polygon.io</span>
+                </div>
+                <div class="settings-item">
+                    <span class="settings-label">WebSocket</span>
+                    <span class="settings-value" id="ws-status">Conectando...</span>
+                </div>
+                <div class="settings-item">
+                    <span class="settings-label">Latencia</span>
+                    <span class="settings-value" id="latency-display">--ms</span>
+                </div>
+                <div class="settings-item">
+                    <span class="settings-label">Tickers suscritos</span>
+                    <span class="settings-value" id="tickers-count">0</span>
+                </div>
+                
+                <div class="section-header">PREFERENCIAS</div>
+                <div class="settings-item">
+                    <span class="settings-label">Tema</span>
+                    <span class="settings-value">🌙 Oscuro</span>
+                </div>
+                <div class="settings-item">
+                    <span class="settings-label">Notificaciones</span>
+                    <span class="settings-value">✅ Activadas</span>
+                </div>
+                
+                <div class="section-header">MERCADO NYSE/NASDAQ</div>
+                <div class="settings-item">
+                    <span class="settings-label">Estado</span>
+                    <span class="settings-value" id="market-status">--</span>
+                </div>
+                <div class="settings-item">
+                    <span class="settings-label">Hora Nueva York</span>
+                    <span class="settings-value" id="ny-time">--</span>
+                </div>
+                
+                <div class="section-header">ÍNDICES CARGADOS</div>
+                <div class="settings-item">
+                    <span class="settings-label">DOW JONES</span>
+                    <span class="settings-value">30 componentes</span>
+                </div>
+                <div class="settings-item">
+                    <span class="settings-label">NASDAQ 100</span>
+                    <span class="settings-value">100 componentes</span>
+                </div>
+                <div class="settings-item">
+                    <span class="settings-label">S&P 500</span>
+                    <span class="settings-value">500 componentes</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- ========== BOTTOM NAV FIJO ========== -->
+        <nav class="bottom-nav">
+            <button class="nav-item active" onclick="switchView('home')" id="nav-home">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+                </svg>
+                <span>Inicio</span>
+            </button>
+            <button class="nav-item" onclick="switchView('chart')" id="nav-chart">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/>
+                </svg>
+                <span>Gráfico</span>
+            </button>
+            <button class="nav-item" onclick="switchView('search')" id="nav-search">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+                </svg>
+                <span>Buscar</span>
+            </button>
+            <button class="nav-item" onclick="switchView('community')" id="nav-community">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
+                </svg>
+                <span>Noticias</span>
+            </button>
+            <button class="nav-item" onclick="switchView('settings')" id="nav-settings">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M19.14 12.94c.04-.31.06-.63.06-.94 0-.31-.02-.63-.06-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
+                </svg>
+                <span>Ajustes</span>
+            </button>
+        </nav>
+        
     </div>
 
     <script>
         // ==========================================
-        // CONFIGURACIÓN
+        // CONFIGURACIÓN POLYGON PRO
         // ==========================================
         const API_KEY = 'Q3I6b14c8HL2l_A7faplgnuMTXekxCUU';
         let socket = null;
@@ -281,150 +764,251 @@
         let lastMessageTime = Date.now();
         
         // ==========================================
-        // DATOS OFICIALES DE ÍNDICES - COMPLETOS
-        // Fuente: SlickCharts (enero 2025)
+        // DATOS COMPLETOS DE LOS 3 ÍNDICES
+        // DOW JONES: 30 componentes
+        // NASDAQ 100: 100 componentes  
+        // S&P 500: 500 componentes (top 100 aquí)
         // ==========================================
         
-        // DOW JONES - 30 COMPONENTES (Price-Weighted)
+        // DOW JONES - 30 COMPONENTES COMPLETOS
         const DOW_COMPONENTS = [
-            { ticker: 'GS', nombre: 'Goldman Sachs', sector: 'Finanzas' },
-            { ticker: 'CAT', nombre: 'Caterpillar', sector: 'Industrial' },
-            { ticker: 'MSFT', nombre: 'Microsoft', sector: 'Tecnología' },
-            { ticker: 'HD', nombre: 'Home Depot', sector: 'Retail' },
-            { ticker: 'AXP', nombre: 'American Express', sector: 'Finanzas' },
-            { ticker: 'SHW', nombre: 'Sherwin-Williams', sector: 'Materiales' },
-            { ticker: 'AMGN', nombre: 'Amgen', sector: 'Salud' },
-            { ticker: 'V', nombre: 'Visa', sector: 'Finanzas' },
-            { ticker: 'IBM', nombre: 'IBM', sector: 'Tecnología' },
-            { ticker: 'MCD', nombre: "McDonald's", sector: 'Restaurantes' },
-            { ticker: 'JPM', nombre: 'JPMorgan Chase', sector: 'Finanzas' },
-            { ticker: 'UNH', nombre: 'UnitedHealth', sector: 'Salud' },
-            { ticker: 'TRV', nombre: 'Travelers', sector: 'Seguros' },
-            { ticker: 'AAPL', nombre: 'Apple', sector: 'Tecnología' },
-            { ticker: 'BA', nombre: 'Boeing', sector: 'Aeroespacial' },
-            { ticker: 'AMZN', nombre: 'Amazon', sector: 'E-commerce' },
+            { ticker: 'UNH', nombre: 'UnitedHealth Group Inc.', sector: 'Salud' },
+            { ticker: 'GS', nombre: 'Goldman Sachs Group Inc.', sector: 'Finanzas' },
+            { ticker: 'MSFT', nombre: 'Microsoft Corporation', sector: 'Tecnología' },
+            { ticker: 'HD', nombre: 'Home Depot Inc.', sector: 'Retail' },
+            { ticker: 'CAT', nombre: 'Caterpillar Inc.', sector: 'Industrial' },
+            { ticker: 'CRM', nombre: 'Salesforce Inc.', sector: 'Tecnología' },
+            { ticker: 'V', nombre: 'Visa Inc.', sector: 'Finanzas' },
+            { ticker: 'AXP', nombre: 'American Express Co.', sector: 'Finanzas' },
+            { ticker: 'MCD', nombre: "McDonald's Corporation", sector: 'Restaurantes' },
+            { ticker: 'AMGN', nombre: 'Amgen Inc.', sector: 'Biotecnología' },
+            { ticker: 'SHW', nombre: 'Sherwin-Williams Co.', sector: 'Materiales' },
+            { ticker: 'TRV', nombre: 'Travelers Companies Inc.', sector: 'Seguros' },
+            { ticker: 'JPM', nombre: 'JPMorgan Chase & Co.', sector: 'Finanzas' },
+            { ticker: 'BA', nombre: 'Boeing Company', sector: 'Aeroespacial' },
+            { ticker: 'IBM', nombre: 'IBM Corporation', sector: 'Tecnología' },
+            { ticker: 'AAPL', nombre: 'Apple Inc.', sector: 'Tecnología' },
+            { ticker: 'AMZN', nombre: 'Amazon.com Inc.', sector: 'E-commerce' },
+            { ticker: 'HON', nombre: 'Honeywell International', sector: 'Industrial' },
             { ticker: 'JNJ', nombre: 'Johnson & Johnson', sector: 'Salud' },
-            { ticker: 'CRM', nombre: 'Salesforce', sector: 'Tecnología' },
-            { ticker: 'HON', nombre: 'Honeywell', sector: 'Industrial' },
-            { ticker: 'NVDA', nombre: 'NVIDIA', sector: 'Semiconductores' },
-            { ticker: 'CVX', nombre: 'Chevron', sector: 'Energía' },
-            { ticker: 'MMM', nombre: '3M', sector: 'Industrial' },
-            { ticker: 'PG', nombre: 'Procter & Gamble', sector: 'Consumo' },
-            { ticker: 'WMT', nombre: 'Walmart', sector: 'Retail' },
-            { ticker: 'DIS', nombre: 'Disney', sector: 'Entretenimiento' },
-            { ticker: 'MRK', nombre: 'Merck', sector: 'Salud' },
-            { ticker: 'CSCO', nombre: 'Cisco', sector: 'Tecnología' },
-            { ticker: 'KO', nombre: 'Coca-Cola', sector: 'Bebidas' },
-            { ticker: 'NKE', nombre: 'Nike', sector: 'Consumo' },
-            { ticker: 'VZ', nombre: 'Verizon', sector: 'Telecom' }
+            { ticker: 'PG', nombre: 'Procter & Gamble Co.', sector: 'Consumo' },
+            { ticker: 'CVX', nombre: 'Chevron Corporation', sector: 'Energía' },
+            { ticker: 'MRK', nombre: 'Merck & Co. Inc.', sector: 'Farmacéutica' },
+            { ticker: 'NKE', nombre: 'Nike Inc.', sector: 'Consumo' },
+            { ticker: 'DIS', nombre: 'Walt Disney Company', sector: 'Entretenimiento' },
+            { ticker: 'WMT', nombre: 'Walmart Inc.', sector: 'Retail' },
+            { ticker: 'NVDA', nombre: 'NVIDIA Corporation', sector: 'Semiconductores' },
+            { ticker: 'MMM', nombre: '3M Company', sector: 'Industrial' },
+            { ticker: 'KO', nombre: 'Coca-Cola Company', sector: 'Bebidas' },
+            { ticker: 'CSCO', nombre: 'Cisco Systems Inc.', sector: 'Tecnología' },
+            { ticker: 'VZ', nombre: 'Verizon Communications', sector: 'Telecom' }
         ];
         
-        // NASDAQ 100 - 101 COMPONENTES (Market-Cap Weighted)
+        // NASDAQ 100 - 100 COMPONENTES
         const NASDAQ_COMPONENTS = [
-            { ticker: 'NVDA', nombre: 'NVIDIA', sector: 'Semiconductores' },
-            { ticker: 'AAPL', nombre: 'Apple', sector: 'Tecnología' },
-            { ticker: 'MSFT', nombre: 'Microsoft', sector: 'Tecnología' },
-            { ticker: 'AMZN', nombre: 'Amazon', sector: 'E-commerce' },
-            { ticker: 'GOOGL', nombre: 'Alphabet Class A', sector: 'Tecnología' },
-            { ticker: 'GOOG', nombre: 'Alphabet Class C', sector: 'Tecnología' },
-            { ticker: 'META', nombre: 'Meta Platforms', sector: 'Tecnología' },
-            { ticker: 'AVGO', nombre: 'Broadcom', sector: 'Semiconductores' },
-            { ticker: 'TSLA', nombre: 'Tesla', sector: 'Automotriz' },
-            { ticker: 'ASML', nombre: 'ASML Holding', sector: 'Semiconductores' },
-            { ticker: 'MU', nombre: 'Micron Technology', sector: 'Semiconductores' },
-            { ticker: 'COST', nombre: 'Costco', sector: 'Retail' },
-            { ticker: 'AMD', nombre: 'AMD', sector: 'Semiconductores' },
-            { ticker: 'PLTR', nombre: 'Palantir', sector: 'Software' },
-            { ticker: 'NFLX', nombre: 'Netflix', sector: 'Entretenimiento' },
-            { ticker: 'LRCX', nombre: 'Lam Research', sector: 'Semiconductores' },
-            { ticker: 'CSCO', nombre: 'Cisco', sector: 'Tecnología' },
-            { ticker: 'AZN', nombre: 'AstraZeneca', sector: 'Salud' },
-            { ticker: 'AMAT', nombre: 'Applied Materials', sector: 'Semiconductores' },
-            { ticker: 'INTC', nombre: 'Intel', sector: 'Semiconductores' },
-            { ticker: 'KLAC', nombre: 'KLA Corporation', sector: 'Semiconductores' },
-            { ticker: 'LIN', nombre: 'Linde', sector: 'Materiales' },
-            { ticker: 'TMUS', nombre: 'T-Mobile', sector: 'Telecom' },
-            { ticker: 'PEP', nombre: 'PepsiCo', sector: 'Bebidas' },
+            { ticker: 'AAPL', nombre: 'Apple Inc.', sector: 'Tecnología' },
+            { ticker: 'NVDA', nombre: 'NVIDIA Corporation', sector: 'Semiconductores' },
+            { ticker: 'MSFT', nombre: 'Microsoft Corporation', sector: 'Tecnología' },
+            { ticker: 'AMZN', nombre: 'Amazon.com Inc.', sector: 'E-commerce' },
+            { ticker: 'META', nombre: 'Meta Platforms Inc.', sector: 'Tecnología' },
+            { ticker: 'GOOGL', nombre: 'Alphabet Inc. Class A', sector: 'Tecnología' },
+            { ticker: 'GOOG', nombre: 'Alphabet Inc. Class C', sector: 'Tecnología' },
+            { ticker: 'TSLA', nombre: 'Tesla Inc.', sector: 'Automotriz' },
+            { ticker: 'AVGO', nombre: 'Broadcom Inc.', sector: 'Semiconductores' },
+            { ticker: 'COST', nombre: 'Costco Wholesale Corp.', sector: 'Retail' },
+            { ticker: 'NFLX', nombre: 'Netflix Inc.', sector: 'Entretenimiento' },
+            { ticker: 'AMD', nombre: 'Advanced Micro Devices', sector: 'Semiconductores' },
+            { ticker: 'PEP', nombre: 'PepsiCo Inc.', sector: 'Bebidas' },
+            { ticker: 'ADBE', nombre: 'Adobe Inc.', sector: 'Software' },
+            { ticker: 'CSCO', nombre: 'Cisco Systems Inc.', sector: 'Tecnología' },
+            { ticker: 'TMUS', nombre: 'T-Mobile US Inc.', sector: 'Telecom' },
+            { ticker: 'INTC', nombre: 'Intel Corporation', sector: 'Semiconductores' },
+            { ticker: 'CMCSA', nombre: 'Comcast Corporation', sector: 'Telecom' },
+            { ticker: 'INTU', nombre: 'Intuit Inc.', sector: 'Software' },
             { ticker: 'TXN', nombre: 'Texas Instruments', sector: 'Semiconductores' },
-            { ticker: 'AMGN', nombre: 'Amgen', sector: 'Salud' },
-            { ticker: 'ISRG', nombre: 'Intuitive Surgical', sector: 'Salud' },
-            { ticker: 'APP', nombre: 'AppLovin', sector: 'Software' },
-            { ticker: 'SHOP', nombre: 'Shopify', sector: 'E-commerce' },
-            { ticker: 'GILD', nombre: 'Gilead Sciences', sector: 'Salud' },
-            { ticker: 'BKNG', nombre: 'Booking Holdings', sector: 'Viajes' },
-            { ticker: 'QCOM', nombre: 'Qualcomm', sector: 'Semiconductores' },
-            { ticker: 'ADI', nombre: 'Analog Devices', sector: 'Semiconductores' },
-            { ticker: 'PDD', nombre: 'PDD Holdings', sector: 'E-commerce' },
-            { ticker: 'INTU', nombre: 'Intuit', sector: 'Software' },
-            { ticker: 'HON', nombre: 'Honeywell', sector: 'Industrial' },
+            { ticker: 'QCOM', nombre: 'Qualcomm Inc.', sector: 'Semiconductores' },
+            { ticker: 'AMGN', nombre: 'Amgen Inc.', sector: 'Biotecnología' },
+            { ticker: 'AMAT', nombre: 'Applied Materials Inc.', sector: 'Semiconductores' },
+            { ticker: 'ISRG', nombre: 'Intuitive Surgical Inc.', sector: 'Salud' },
+            { ticker: 'BKNG', nombre: 'Booking Holdings Inc.', sector: 'Viajes' },
+            { ticker: 'HON', nombre: 'Honeywell International', sector: 'Industrial' },
+            { ticker: 'VRTX', nombre: 'Vertex Pharmaceuticals', sector: 'Biotecnología' },
+            { ticker: 'LRCX', nombre: 'Lam Research Corp.', sector: 'Semiconductores' },
             { ticker: 'PANW', nombre: 'Palo Alto Networks', sector: 'Ciberseguridad' },
-            { ticker: 'ARM', nombre: 'Arm Holdings', sector: 'Semiconductores' },
-            { ticker: 'ADBE', nombre: 'Adobe', sector: 'Software' },
-            { ticker: 'CRWD', nombre: 'CrowdStrike', sector: 'Ciberseguridad' },
-            { ticker: 'VRTX', nombre: 'Vertex Pharma', sector: 'Salud' },
-            { ticker: 'MELI', nombre: 'MercadoLibre', sector: 'E-commerce' },
-            { ticker: 'SBUX', nombre: 'Starbucks', sector: 'Restaurantes' },
+            { ticker: 'MU', nombre: 'Micron Technology Inc.', sector: 'Semiconductores' },
+            { ticker: 'ADI', nombre: 'Analog Devices Inc.', sector: 'Semiconductores' },
+            { ticker: 'KLAC', nombre: 'KLA Corporation', sector: 'Semiconductores' },
+            { ticker: 'ADP', nombre: 'Automatic Data Processing', sector: 'Software' },
+            { ticker: 'SBUX', nombre: 'Starbucks Corporation', sector: 'Restaurantes' },
+            { ticker: 'GILD', nombre: 'Gilead Sciences Inc.', sector: 'Biotecnología' },
+            { ticker: 'MDLZ', nombre: 'Mondelez International', sector: 'Consumo' },
+            { ticker: 'REGN', nombre: 'Regeneron Pharmaceuticals', sector: 'Biotecnología' },
+            { ticker: 'SNPS', nombre: 'Synopsys Inc.', sector: 'Software' },
+            { ticker: 'CDNS', nombre: 'Cadence Design Systems', sector: 'Software' },
+            { ticker: 'MELI', nombre: 'MercadoLibre Inc.', sector: 'E-commerce' },
+            { ticker: 'PYPL', nombre: 'PayPal Holdings Inc.', sector: 'Fintech' },
+            { ticker: 'ASML', nombre: 'ASML Holding NV', sector: 'Semiconductores' },
+            { ticker: 'ORLY', nombre: "O'Reilly Automotive", sector: 'Retail' },
+            { ticker: 'CTAS', nombre: 'Cintas Corporation', sector: 'Industrial' },
+            { ticker: 'MAR', nombre: 'Marriott International', sector: 'Hospitalidad' },
+            { ticker: 'CSX', nombre: 'CSX Corporation', sector: 'Transporte' },
+            { ticker: 'NXPI', nombre: 'NXP Semiconductors', sector: 'Semiconductores' },
+            { ticker: 'PCAR', nombre: 'PACCAR Inc.', sector: 'Industrial' },
+            { ticker: 'MRVL', nombre: 'Marvell Technology', sector: 'Semiconductores' },
+            { ticker: 'WDAY', nombre: 'Workday Inc.', sector: 'Software' },
+            { ticker: 'CPRT', nombre: 'Copart Inc.', sector: 'Industrial' },
+            { ticker: 'DXCM', nombre: 'DexCom Inc.', sector: 'Salud' },
+            { ticker: 'FTNT', nombre: 'Fortinet Inc.', sector: 'Ciberseguridad' },
+            { ticker: 'MNST', nombre: 'Monster Beverage Corp.', sector: 'Bebidas' },
+            { ticker: 'PAYX', nombre: 'Paychex Inc.', sector: 'Software' },
+            { ticker: 'ODFL', nombre: 'Old Dominion Freight', sector: 'Transporte' },
+            { ticker: 'ROST', nombre: 'Ross Stores Inc.', sector: 'Retail' },
+            { ticker: 'KDP', nombre: 'Keurig Dr Pepper', sector: 'Bebidas' },
+            { ticker: 'AZN', nombre: 'AstraZeneca PLC', sector: 'Farmacéutica' },
+            { ticker: 'KHC', nombre: 'Kraft Heinz Company', sector: 'Consumo' },
+            { ticker: 'MCHP', nombre: 'Microchip Technology', sector: 'Semiconductores' },
+            { ticker: 'AEP', nombre: 'American Electric Power', sector: 'Energía' },
+            { ticker: 'EXC', nombre: 'Exelon Corporation', sector: 'Energía' },
+            { ticker: 'LULU', nombre: 'Lululemon Athletica', sector: 'Retail' },
             { ticker: 'CEG', nombre: 'Constellation Energy', sector: 'Energía' },
-            { ticker: 'CMCSA', nombre: 'Comcast', sector: 'Telecom' },
-            { ticker: 'ADP', nombre: 'ADP', sector: 'Software' },
-            { ticker: 'SNPS', nombre: 'Synopsys', sector: 'Software' },
-            { ticker: 'DASH', nombre: 'DoorDash', sector: 'Tecnología' },
-            { ticker: 'CDNS', nombre: 'Cadence Design', sector: 'Software' },
-            { ticker: 'MAR', nombre: 'Marriott', sector: 'Hospitalidad' }
+            { ticker: 'GEHC', nombre: 'GE HealthCare Tech', sector: 'Salud' },
+            { ticker: 'EA', nombre: 'Electronic Arts Inc.', sector: 'Entretenimiento' },
+            { ticker: 'VRSK', nombre: 'Verisk Analytics', sector: 'Software' },
+            { ticker: 'XEL', nombre: 'Xcel Energy Inc.', sector: 'Energía' },
+            { ticker: 'BIIB', nombre: 'Biogen Inc.', sector: 'Biotecnología' },
+            { ticker: 'FAST', nombre: 'Fastenal Company', sector: 'Industrial' },
+            { ticker: 'TTWO', nombre: 'Take-Two Interactive', sector: 'Entretenimiento' },
+            { ticker: 'IDXX', nombre: 'IDEXX Laboratories', sector: 'Salud' },
+            { ticker: 'ON', nombre: 'ON Semiconductor', sector: 'Semiconductores' },
+            { ticker: 'CDW', nombre: 'CDW Corporation', sector: 'Tecnología' },
+            { ticker: 'ZS', nombre: 'Zscaler Inc.', sector: 'Ciberseguridad' },
+            { ticker: 'ANSS', nombre: 'ANSYS Inc.', sector: 'Software' },
+            { ticker: 'GFS', nombre: 'GlobalFoundries Inc.', sector: 'Semiconductores' },
+            { ticker: 'ILMN', nombre: 'Illumina Inc.', sector: 'Biotecnología' },
+            { ticker: 'WBD', nombre: 'Warner Bros. Discovery', sector: 'Entretenimiento' },
+            { ticker: 'TEAM', nombre: 'Atlassian Corp.', sector: 'Software' },
+            { ticker: 'DLTR', nombre: 'Dollar Tree Inc.', sector: 'Retail' },
+            { ticker: 'DDOG', nombre: 'Datadog Inc.', sector: 'Software' },
+            { ticker: 'BKR', nombre: 'Baker Hughes Company', sector: 'Energía' },
+            { ticker: 'FANG', nombre: 'Diamondback Energy', sector: 'Energía' },
+            { ticker: 'CTSH', nombre: 'Cognizant Technology', sector: 'Tecnología' },
+            { ticker: 'WBA', nombre: 'Walgreens Boots Alliance', sector: 'Retail' },
+            { ticker: 'CRWD', nombre: 'CrowdStrike Holdings', sector: 'Ciberseguridad' },
+            { ticker: 'ZM', nombre: 'Zoom Video Communications', sector: 'Tecnología' },
+            { ticker: 'OKTA', nombre: 'Okta Inc.', sector: 'Software' },
+            { ticker: 'SPLK', nombre: 'Splunk Inc.', sector: 'Software' },
+            { ticker: 'LCID', nombre: 'Lucid Group Inc.', sector: 'Automotriz' },
+            { ticker: 'RIVN', nombre: 'Rivian Automotive', sector: 'Automotriz' },
+            { ticker: 'ABNB', nombre: 'Airbnb Inc.', sector: 'Viajes' },
+            { ticker: 'DASH', nombre: 'DoorDash Inc.', sector: 'Tecnología' },
+            { ticker: 'COIN', nombre: 'Coinbase Global', sector: 'Fintech' },
+            { ticker: 'HOOD', nombre: 'Robinhood Markets', sector: 'Fintech' },
+            { ticker: 'PLTR', nombre: 'Palantir Technologies', sector: 'Software' },
+            { ticker: 'SNOW', nombre: 'Snowflake Inc.', sector: 'Software' }
         ];
         
-        // S&P 500 - TOP 100 COMPONENTES (Market-Cap Weighted)
+        // S&P 500 - TOP 100 COMPONENTES POR MARKET CAP
         const SP500_COMPONENTS = [
-            { ticker: 'NVDA', nombre: 'NVIDIA', sector: 'Semiconductores' },
-            { ticker: 'AAPL', nombre: 'Apple', sector: 'Tecnología' },
-            { ticker: 'MSFT', nombre: 'Microsoft', sector: 'Tecnología' },
-            { ticker: 'AMZN', nombre: 'Amazon', sector: 'E-commerce' },
-            { ticker: 'GOOGL', nombre: 'Alphabet Class A', sector: 'Tecnología' },
-            { ticker: 'GOOG', nombre: 'Alphabet Class C', sector: 'Tecnología' },
-            { ticker: 'META', nombre: 'Meta Platforms', sector: 'Tecnología' },
-            { ticker: 'AVGO', nombre: 'Broadcom', sector: 'Semiconductores' },
-            { ticker: 'TSLA', nombre: 'Tesla', sector: 'Automotriz' },
-            { ticker: 'BRK.B', nombre: 'Berkshire Hathaway', sector: 'Finanzas' },
-            { ticker: 'WMT', nombre: 'Walmart', sector: 'Retail' },
-            { ticker: 'LLY', nombre: 'Eli Lilly', sector: 'Salud' },
-            { ticker: 'JPM', nombre: 'JPMorgan Chase', sector: 'Finanzas' },
-            { ticker: 'V', nombre: 'Visa', sector: 'Finanzas' },
-            { ticker: 'XOM', nombre: 'ExxonMobil', sector: 'Energía' },
+            { ticker: 'AAPL', nombre: 'Apple Inc.', sector: 'Tecnología' },
+            { ticker: 'MSFT', nombre: 'Microsoft Corporation', sector: 'Tecnología' },
+            { ticker: 'NVDA', nombre: 'NVIDIA Corporation', sector: 'Semiconductores' },
+            { ticker: 'AMZN', nombre: 'Amazon.com Inc.', sector: 'E-commerce' },
+            { ticker: 'GOOGL', nombre: 'Alphabet Inc. Class A', sector: 'Tecnología' },
+            { ticker: 'META', nombre: 'Meta Platforms Inc.', sector: 'Tecnología' },
+            { ticker: 'GOOG', nombre: 'Alphabet Inc. Class C', sector: 'Tecnología' },
+            { ticker: 'BRK.B', nombre: 'Berkshire Hathaway B', sector: 'Finanzas' },
+            { ticker: 'LLY', nombre: 'Eli Lilly & Company', sector: 'Farmacéutica' },
+            { ticker: 'TSLA', nombre: 'Tesla Inc.', sector: 'Automotriz' },
+            { ticker: 'UNH', nombre: 'UnitedHealth Group', sector: 'Salud' },
+            { ticker: 'JPM', nombre: 'JPMorgan Chase & Co.', sector: 'Finanzas' },
+            { ticker: 'V', nombre: 'Visa Inc.', sector: 'Finanzas' },
+            { ticker: 'XOM', nombre: 'Exxon Mobil Corporation', sector: 'Energía' },
+            { ticker: 'AVGO', nombre: 'Broadcom Inc.', sector: 'Semiconductores' },
+            { ticker: 'MA', nombre: 'Mastercard Inc.', sector: 'Finanzas' },
             { ticker: 'JNJ', nombre: 'Johnson & Johnson', sector: 'Salud' },
-            { ticker: 'ORCL', nombre: 'Oracle', sector: 'Software' },
-            { ticker: 'MU', nombre: 'Micron', sector: 'Semiconductores' },
-            { ticker: 'MA', nombre: 'Mastercard', sector: 'Finanzas' },
-            { ticker: 'COST', nombre: 'Costco', sector: 'Retail' },
-            { ticker: 'AMD', nombre: 'AMD', sector: 'Semiconductores' },
-            { ticker: 'ABBV', nombre: 'AbbVie', sector: 'Salud' },
-            { ticker: 'PLTR', nombre: 'Palantir', sector: 'Software' },
-            { ticker: 'BAC', nombre: 'Bank of America', sector: 'Finanzas' },
-            { ticker: 'HD', nombre: 'Home Depot', sector: 'Retail' },
-            { ticker: 'NFLX', nombre: 'Netflix', sector: 'Entretenimiento' },
-            { ticker: 'PG', nombre: 'Procter & Gamble', sector: 'Consumo' },
-            { ticker: 'CVX', nombre: 'Chevron', sector: 'Energía' },
-            { ticker: 'KO', nombre: 'Coca-Cola', sector: 'Bebidas' },
-            { ticker: 'CSCO', nombre: 'Cisco', sector: 'Tecnología' },
-            { ticker: 'GE', nombre: 'GE Aerospace', sector: 'Industrial' },
-            { ticker: 'CAT', nombre: 'Caterpillar', sector: 'Industrial' },
-            { ticker: 'LRCX', nombre: 'Lam Research', sector: 'Semiconductores' },
-            { ticker: 'MS', nombre: 'Morgan Stanley', sector: 'Finanzas' },
-            { ticker: 'GS', nombre: 'Goldman Sachs', sector: 'Finanzas' },
-            { ticker: 'PM', nombre: 'Philip Morris', sector: 'Tabaco' },
-            { ticker: 'IBM', nombre: 'IBM', sector: 'Tecnología' },
-            { ticker: 'WFC', nombre: 'Wells Fargo', sector: 'Finanzas' },
+            { ticker: 'PG', nombre: 'Procter & Gamble Co.', sector: 'Consumo' },
+            { ticker: 'HD', nombre: 'Home Depot Inc.', sector: 'Retail' },
+            { ticker: 'COST', nombre: 'Costco Wholesale Corp.', sector: 'Retail' },
+            { ticker: 'MRK', nombre: 'Merck & Co. Inc.', sector: 'Farmacéutica' },
+            { ticker: 'ABBV', nombre: 'AbbVie Inc.', sector: 'Farmacéutica' },
+            { ticker: 'CVX', nombre: 'Chevron Corporation', sector: 'Energía' },
+            { ticker: 'CRM', nombre: 'Salesforce Inc.', sector: 'Software' },
+            { ticker: 'NFLX', nombre: 'Netflix Inc.', sector: 'Entretenimiento' },
+            { ticker: 'AMD', nombre: 'Advanced Micro Devices', sector: 'Semiconductores' },
+            { ticker: 'KO', nombre: 'Coca-Cola Company', sector: 'Bebidas' },
+            { ticker: 'PEP', nombre: 'PepsiCo Inc.', sector: 'Bebidas' },
+            { ticker: 'BAC', nombre: 'Bank of America Corp.', sector: 'Finanzas' },
+            { ticker: 'WMT', nombre: 'Walmart Inc.', sector: 'Retail' },
+            { ticker: 'TMO', nombre: 'Thermo Fisher Scientific', sector: 'Salud' },
+            { ticker: 'ADBE', nombre: 'Adobe Inc.', sector: 'Software' },
+            { ticker: 'MCD', nombre: "McDonald's Corporation", sector: 'Restaurantes' },
+            { ticker: 'CSCO', nombre: 'Cisco Systems Inc.', sector: 'Tecnología' },
+            { ticker: 'WFC', nombre: 'Wells Fargo & Company', sector: 'Finanzas' },
+            { ticker: 'ACN', nombre: 'Accenture PLC', sector: 'Tecnología' },
+            { ticker: 'ABT', nombre: 'Abbott Laboratories', sector: 'Salud' },
+            { ticker: 'LIN', nombre: 'Linde PLC', sector: 'Materiales' },
+            { ticker: 'DHR', nombre: 'Danaher Corporation', sector: 'Salud' },
+            { ticker: 'ORCL', nombre: 'Oracle Corporation', sector: 'Software' },
+            { ticker: 'TXN', nombre: 'Texas Instruments', sector: 'Semiconductores' },
+            { ticker: 'CMCSA', nombre: 'Comcast Corporation', sector: 'Telecom' },
+            { ticker: 'PM', nombre: 'Philip Morris International', sector: 'Tabaco' },
+            { ticker: 'VZ', nombre: 'Verizon Communications', sector: 'Telecom' },
+            { ticker: 'NEE', nombre: 'NextEra Energy Inc.', sector: 'Energía' },
+            { ticker: 'INTC', nombre: 'Intel Corporation', sector: 'Semiconductores' },
+            { ticker: 'DIS', nombre: 'Walt Disney Company', sector: 'Entretenimiento' },
             { ticker: 'RTX', nombre: 'RTX Corporation', sector: 'Defensa' },
-            { ticker: 'AMAT', nombre: 'Applied Materials', sector: 'Semiconductores' },
-            { ticker: 'UNH', nombre: 'UnitedHealth', sector: 'Salud' },
-            { ticker: 'MRK', nombre: 'Merck', sector: 'Salud' },
-            { ticker: 'AXP', nombre: 'American Express', sector: 'Finanzas' },
-            { ticker: 'INTC', nombre: 'Intel', sector: 'Semiconductores' },
-            { ticker: 'TMO', nombre: 'Thermo Fisher', sector: 'Salud' },
-            { ticker: 'MCD', nombre: "McDonald's", sector: 'Restaurantes' },
+            { ticker: 'INTU', nombre: 'Intuit Inc.', sector: 'Software' },
+            { ticker: 'IBM', nombre: 'IBM Corporation', sector: 'Tecnología' },
+            { ticker: 'QCOM', nombre: 'Qualcomm Inc.', sector: 'Semiconductores' },
+            { ticker: 'CAT', nombre: 'Caterpillar Inc.', sector: 'Industrial' },
+            { ticker: 'AMGN', nombre: 'Amgen Inc.', sector: 'Biotecnología' },
+            { ticker: 'NKE', nombre: 'Nike Inc.', sector: 'Consumo' },
+            { ticker: 'HON', nombre: 'Honeywell International', sector: 'Industrial' },
+            { ticker: 'GE', nombre: 'General Electric Co.', sector: 'Industrial' },
+            { ticker: 'SPGI', nombre: 'S&P Global Inc.', sector: 'Finanzas' },
+            { ticker: 'BA', nombre: 'Boeing Company', sector: 'Aeroespacial' },
+            { ticker: 'GS', nombre: 'Goldman Sachs Group', sector: 'Finanzas' },
+            { ticker: 'ISRG', nombre: 'Intuitive Surgical Inc.', sector: 'Salud' },
+            { ticker: 'AXP', nombre: 'American Express Co.', sector: 'Finanzas' },
+            { ticker: 'BKNG', nombre: 'Booking Holdings Inc.', sector: 'Viajes' },
+            { ticker: 'SYK', nombre: 'Stryker Corporation', sector: 'Salud' },
+            { ticker: 'VRTX', nombre: 'Vertex Pharmaceuticals', sector: 'Biotecnología' },
+            { ticker: 'MDLZ', nombre: 'Mondelez International', sector: 'Consumo' },
+            { ticker: 'ELV', nombre: 'Elevance Health Inc.', sector: 'Salud' },
+            { ticker: 'T', nombre: 'AT&T Inc.', sector: 'Telecom' },
+            { ticker: 'MMC', nombre: 'Marsh & McLennan', sector: 'Finanzas' },
+            { ticker: 'SCHW', nombre: 'Charles Schwab Corp.', sector: 'Finanzas' },
+            { ticker: 'LOW', nombre: "Lowe's Companies", sector: 'Retail' },
+            { ticker: 'BLK', nombre: 'BlackRock Inc.', sector: 'Finanzas' },
+            { ticker: 'PLD', nombre: 'Prologis Inc.', sector: 'Real Estate' },
+            { ticker: 'UPS', nombre: 'United Parcel Service', sector: 'Transporte' },
+            { ticker: 'ADP', nombre: 'Automatic Data Processing', sector: 'Software' },
+            { ticker: 'AMT', nombre: 'American Tower Corp.', sector: 'Real Estate' },
+            { ticker: 'REGN', nombre: 'Regeneron Pharmaceuticals', sector: 'Biotecnología' },
+            { ticker: 'GILD', nombre: 'Gilead Sciences Inc.', sector: 'Biotecnología' },
+            { ticker: 'LMT', nombre: 'Lockheed Martin Corp.', sector: 'Defensa' },
+            { ticker: 'SBUX', nombre: 'Starbucks Corporation', sector: 'Restaurantes' },
+            { ticker: 'PANW', nombre: 'Palo Alto Networks', sector: 'Ciberseguridad' },
+            { ticker: 'MS', nombre: 'Morgan Stanley', sector: 'Finanzas' },
+            { ticker: 'DE', nombre: 'Deere & Company', sector: 'Industrial' },
+            { ticker: 'CB', nombre: 'Chubb Limited', sector: 'Seguros' },
+            { ticker: 'CI', nombre: 'Cigna Group', sector: 'Salud' },
+            { ticker: 'BMY', nombre: 'Bristol-Myers Squibb', sector: 'Farmacéutica' },
+            { ticker: 'ADI', nombre: 'Analog Devices Inc.', sector: 'Semiconductores' },
+            { ticker: 'PFE', nombre: 'Pfizer Inc.', sector: 'Farmacéutica' },
+            { ticker: 'SLB', nombre: 'Schlumberger Limited', sector: 'Energía' },
+            { ticker: 'FI', nombre: 'Fiserv Inc.', sector: 'Fintech' },
+            { ticker: 'LRCX', nombre: 'Lam Research Corp.', sector: 'Semiconductores' },
+            { ticker: 'SO', nombre: 'Southern Company', sector: 'Energía' },
+            { ticker: 'DUK', nombre: 'Duke Energy Corp.', sector: 'Energía' },
+            { ticker: 'MO', nombre: 'Altria Group Inc.', sector: 'Tabaco' },
+            { ticker: 'CL', nombre: 'Colgate-Palmolive Co.', sector: 'Consumo' },
+            { ticker: 'ICE', nombre: 'Intercontinental Exchange', sector: 'Finanzas' },
             { ticker: 'KLAC', nombre: 'KLA Corporation', sector: 'Semiconductores' },
-            { ticker: 'CRM', nombre: 'Salesforce', sector: 'Software' },
-            { ticker: 'LIN', nombre: 'Linde', sector: 'Materiales' },
-            { ticker: 'TMUS', nombre: 'T-Mobile', sector: 'Telecom' }
+            { ticker: 'AMAT', nombre: 'Applied Materials Inc.', sector: 'Semiconductores' },
+            { ticker: 'CME', nombre: 'CME Group Inc.', sector: 'Finanzas' },
+            { ticker: 'MU', nombre: 'Micron Technology Inc.', sector: 'Semiconductores' },
+            { ticker: 'EQIX', nombre: 'Equinix Inc.', sector: 'Real Estate' }
         ];
 
         // ==========================================
@@ -433,128 +1017,82 @@
         const INDICES_DATA = {
             dow: {
                 nombre: 'DOW JONES',
+                total: 30,
                 metodo: 'Price-Weighted',
-                empresas: DOW_COMPONENTS.map(e => ({ ...e, weight: 0, price: 0, change: 0, changePercent: 0 }))
+                empresas: DOW_COMPONENTS.map(e => ({ ...e, price: 0, change: 0, changePercent: 0, weight: 0 }))
             },
             nasdaq: {
                 nombre: 'NASDAQ 100',
+                total: 100,
                 metodo: 'Market-Cap Weighted',
-                empresas: NASDAQ_COMPONENTS.map(e => ({ ...e, weight: 0, price: 0, change: 0, changePercent: 0 }))
+                empresas: NASDAQ_COMPONENTS.map(e => ({ ...e, price: 0, change: 0, changePercent: 0, weight: 0 }))
             },
             sp500: {
                 nombre: 'S&P 500',
+                total: 500,
                 metodo: 'Market-Cap Weighted',
-                empresas: SP500_COMPONENTS.map(e => ({ ...e, weight: 0, price: 0, change: 0, changePercent: 0 }))
+                empresas: SP500_COMPONENTS.map(e => ({ ...e, price: 0, change: 0, changePercent: 0, weight: 0 }))
             }
         };
 
-        // ==========================================
-        // VARIABLES GLOBALES
-        // ==========================================
+        // Variables globales
         let chart, candleSeries;
-        let activoActual = { ticker: 'NVDA', nombre: 'NVIDIA', sector: 'Semiconductores' };
-        let indiceActual = 'dow';
+        let activoActual = null;
         let preciosEnTiempoReal = {};
         let datosHistoricos = {};
-        let tradeCount = 0;
-        let isLoading = false;
+        let currentView = 'home';
+        let currentFilter = 'all';
+        let expandedSections = { dow: false, nasdaq: false, sp500: false };
+        let onlineUsers = Math.floor(Math.random() * 500) + 100;
 
         // ==========================================
-        // LOGGING SIMPLIFICADO
+        // NAVEGACIÓN
         // ==========================================
-        function log(mensaje, tipo = 'info') {
-            const logEl = document.getElementById('activity-log');
-            const time = new Date().toLocaleTimeString('en-US', { 
-                hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false 
-            });
+        function switchView(viewId) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.getElementById(`view-${viewId}`).classList.add('active');
             
-            const colors = {
-                'info': 'text-zinc-400',
-                'success': 'text-emerald-400',
-                'warning': 'text-yellow-400',
-                'error': 'text-red-400',
-                'trade': 'text-blue-400'
-            };
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById(`nav-${viewId}`).classList.add('active');
             
-            const entry = document.createElement('div');
-            entry.className = colors[tipo] || 'text-zinc-400';
-            entry.innerHTML = `<span class="text-zinc-600">[${time}]</span> ${mensaje}`;
+            currentView = viewId;
             
-            logEl.insertBefore(entry, logEl.firstChild);
-            
-            // Limitar a 50 entradas
-            while (logEl.children.length > 50) {
-                logEl.removeChild(logEl.lastChild);
+            if (viewId === 'chart' && chart) {
+                setTimeout(() => {
+                    const container = document.getElementById('chart-container');
+                    chart.applyOptions({ width: container.clientWidth, height: container.clientHeight });
+                }, 100);
             }
-        }
-        
-        function clearLog() {
-            document.getElementById('activity-log').innerHTML = '';
-            log('Log limpiado', 'info');
+            
+            if (viewId === 'community') {
+                renderCommunity();
+            }
         }
 
-        // ==========================================
-        // MARKET HOURS
-        // ==========================================
-        function getMarketSession() {
-            const now = new Date();
-            const nyTime = new Date(now.toLocaleString("en-US", {timeZone: "America/New_York"}));
-            const hour = nyTime.getHours();
-            const minute = nyTime.getMinutes();
-            const day = nyTime.getDay();
-            const timeStr = nyTime.toLocaleTimeString('en-US', { 
-                hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true 
-            });
+        function filterTab(filter, btn) {
+            currentFilter = filter;
+            // Reset expansiones al cambiar filtro
+            expandedSections = { dow: false, nasdaq: false, sp500: false };
             
-            if (day === 0 || day === 6) {
-                return { session: 'CLOSED', label: 'CLOSED (Weekend)', time: timeStr };
-            }
-            
-            const timeInMinutes = hour * 60 + minute;
-            
-            if (timeInMinutes >= 240 && timeInMinutes < 570) {
-                return { session: 'PRE', label: 'PRE-MARKET', time: timeStr };
-            }
-            if (timeInMinutes >= 570 && timeInMinutes < 960) {
-                return { session: 'REGULAR', label: 'MARKET OPEN', time: timeStr };
-            }
-            if (timeInMinutes >= 960 && timeInMinutes < 1200) {
-                return { session: 'AFTER', label: 'AFTER HOURS', time: timeStr };
-            }
-            
-            return { session: 'CLOSED', label: 'CLOSED', time: timeStr };
-        }
-
-        function updateMarketIndicators() {
-            const market = getMarketSession();
-            
-            const config = {
-                'REGULAR': { color: 'text-emerald-400', dot: '🟢' },
-                'PRE': { color: 'text-yellow-400', dot: '🟡' },
-                'AFTER': { color: 'text-blue-400', dot: '🔵' },
-                'CLOSED': { color: 'text-red-400', dot: '🔴' }
-            }[market.session];
-            
-            document.getElementById('market-hours-indicator').innerHTML = `${config.dot} ${market.label}`;
-            document.getElementById('market-hours-indicator').className = `${config.color} font-medium text-[10px]`;
-            document.getElementById('market-status-detail').innerHTML = `${config.dot} ${market.label}`;
-            document.getElementById('market-status-detail').className = `text-sm font-medium ${config.color}`;
-            document.getElementById('ny-time').textContent = `NY: ${market.time}`;
+            document.querySelectorAll('.tabs-container .tab-btn:not(.tab-special)').forEach(t => t.classList.remove('active'));
+            btn.classList.add('active');
+            renderHomeContent();
         }
 
         // ==========================================
-        // CARGAR DATOS INICIALES
+        // CARGAR DATOS EN TIEMPO REAL
         // ==========================================
         async function cargarDatosIniciales() {
-            log('Cargando snapshot de precios...', 'info');
+            updateStatus('loading', 'Cargando...');
             
-            // Obtener todos los tickers únicos
             const allTickers = new Set();
             Object.values(INDICES_DATA).forEach(indice => {
-                indice.empresas.forEach(e => allTickers.add(e.ticker));
+                indice.empresas.forEach(e => {
+                    if (!e.ticker.includes('.')) allTickers.add(e.ticker);
+                });
             });
             
-            document.getElementById('ticker-count').textContent = allTickers.size;
+            document.getElementById('tickers-count').textContent = allTickers.size;
             
             const tickersArray = Array.from(allTickers);
             const batchSize = 50;
@@ -571,121 +1109,74 @@
                         data.tickers.forEach(t => {
                             const price = t.day?.c || t.prevDay?.c || 0;
                             const prevClose = t.prevDay?.c || price;
+                            const change = price - prevClose;
+                            const changePct = prevClose > 0 ? (change / prevClose) * 100 : 0;
                             
                             preciosEnTiempoReal[t.ticker] = price;
                             datosHistoricos[t.ticker] = {
                                 previousClose: prevClose,
                                 open: t.day?.o || prevClose,
-                                change: price - prevClose,
-                                changePercent: prevClose > 0 ? ((price - prevClose) / prevClose) * 100 : 0
+                                high: t.day?.h || price,
+                                low: t.day?.l || price,
+                                change: change,
+                                changePercent: changePct
                             };
                         });
                     }
                 } catch (error) {
-                    log(`Error batch ${i}: ${error.message}`, 'error');
+                    console.error('Error:', error);
                 }
                 
-                // Pequeña pausa entre batches
                 if (i + batchSize < tickersArray.length) {
-                    await new Promise(r => setTimeout(r, 100));
+                    await new Promise(r => setTimeout(r, 50));
                 }
             }
             
-            log(`✓ ${Object.keys(preciosEnTiempoReal).length} precios cargados`, 'success');
-            
-            // Calcular pesos
+            actualizarDatosEmpresas();
             calcularPesos();
-            
-            // Renderizar ranking inicial
-            renderizarRanking();
-            
-            // Seleccionar primer activo
-            const primerActivo = INDICES_DATA[indiceActual].empresas[0];
-            if (primerActivo) {
-                cambiarActivo(primerActivo);
-            }
+            renderHomeContent();
+            updateStatus('live', 'LIVE');
         }
 
-        // ==========================================
-        // CALCULAR PESOS
-        // ==========================================
-        function calcularPesos() {
-            // DOW JONES - Price Weighted
-            calcularPesosDOW();
-            
-            // NASDAQ y S&P500 - Los pesos oficiales vienen de los índices
-            // Aquí usamos Market Cap como aproximación
-            calcularPesosMarketCap('nasdaq');
-            calcularPesosMarketCap('sp500');
-        }
-
-        function calcularPesosDOW() {
-            const empresas = INDICES_DATA.dow.empresas;
-            let totalPrecio = 0;
-            
-            // Sumar todos los precios
-            empresas.forEach(e => {
-                const precio = preciosEnTiempoReal[e.ticker] || 0;
-                e.price = precio;
-                totalPrecio += precio;
-                
-                const hist = datosHistoricos[e.ticker];
-                if (hist) {
-                    e.change = hist.change;
-                    e.changePercent = hist.changePercent;
-                }
-            });
-            
-            // Calcular weight (precio / total * 100)
-            if (totalPrecio > 0) {
-                empresas.forEach(e => {
-                    e.weight = (e.price / totalPrecio) * 100;
+        function actualizarDatosEmpresas() {
+            Object.values(INDICES_DATA).forEach(indice => {
+                indice.empresas.forEach(empresa => {
+                    const precio = preciosEnTiempoReal[empresa.ticker];
+                    const hist = datosHistoricos[empresa.ticker];
+                    if (precio) empresa.price = precio;
+                    if (hist) {
+                        empresa.change = hist.change;
+                        empresa.changePercent = hist.changePercent;
+                    }
                 });
-            }
-            
-            // Ordenar por weight
-            empresas.sort((a, b) => b.weight - a.weight);
+            });
         }
 
-        function calcularPesosMarketCap(indiceKey) {
-            const empresas = INDICES_DATA[indiceKey].empresas;
+        function calcularPesos() {
+            // DOW - Price Weighted
+            const dowEmpresas = INDICES_DATA.dow.empresas;
+            const totalPrecio = dowEmpresas.reduce((sum, e) => sum + (e.price || 0), 0);
+            if (totalPrecio > 0) {
+                dowEmpresas.forEach(e => e.weight = ((e.price || 0) / totalPrecio) * 100);
+            }
+            dowEmpresas.sort((a, b) => b.weight - a.weight);
             
-            // Actualizar precios y cambios
-            empresas.forEach(e => {
-                e.price = preciosEnTiempoReal[e.ticker] || 0;
-                const hist = datosHistoricos[e.ticker];
-                if (hist) {
-                    e.change = hist.change;
-                    e.changePercent = hist.changePercent;
-                }
+            // NASDAQ y S&P500 - Market Cap approximation
+            ['nasdaq', 'sp500'].forEach(key => {
+                const empresas = INDICES_DATA[key].empresas;
+                let totalWeight = 0;
+                empresas.forEach((e, i) => {
+                    e.weight = Math.pow(0.92, i) * 10;
+                    totalWeight += e.weight;
+                });
+                empresas.forEach(e => e.weight = (e.weight / totalWeight) * 100);
             });
-            
-            // Para NASDAQ y S&P, los pesos oficiales son diferentes del simple market cap
-            // Aquí asignamos pesos aproximados basados en el orden (top-heavy)
-            const totalEmpresas = empresas.length;
-            let totalWeight = 0;
-            
-            empresas.forEach((e, index) => {
-                // Distribución exponencial decreciente
-                e.weight = Math.pow(0.85, index) * 15;
-                totalWeight += e.weight;
-            });
-            
-            // Normalizar a 100%
-            empresas.forEach(e => {
-                e.weight = (e.weight / totalWeight) * 100;
-            });
-            
-            // Ya están ordenados por importancia/market cap
         }
 
         // ==========================================
-        // WEBSOCKET
+        // WEBSOCKET TIEMPO REAL
         // ==========================================
         function conectarWebSocket() {
-            log('Conectando WebSocket...', 'info');
-            updateConnectionStatus(false, 'Connecting...');
-            
             socket = new WebSocket('wss://socket.polygon.io/stocks');
             
             socket.onopen = () => {
@@ -695,29 +1186,27 @@
             socket.onmessage = (event) => {
                 const latency = Date.now() - lastMessageTime;
                 lastMessageTime = Date.now();
+                document.getElementById('latency-display').textContent = `${Math.min(latency, 999)}ms`;
                 
                 const messages = JSON.parse(event.data);
                 
                 messages.forEach(msg => {
                     if (msg.ev === 'status') {
                         if (msg.status === 'auth_success') {
-                            log('✓ WebSocket conectado', 'success');
-                            updateConnectionStatus(true, 'Connected', latency);
+                            updateStatus('live', 'LIVE');
+                            document.getElementById('ws-status').textContent = '🟢 Conectado';
+                            document.getElementById('ws-status').style.color = '#26a69a';
                             reconnectAttempts = 0;
                             suscribirTickers();
-                        } else if (msg.status === 'auth_failed') {
-                            log('✗ Auth failed', 'error');
-                            updateConnectionStatus(false, 'Auth Failed');
                         }
                         return;
                     }
                     
                     if (msg.ev === 'T') {
                         procesarTrade(msg);
-                        updateLatency();
                     }
                     
-                    if (msg.ev === 'AM' && msg.sym === activoActual.ticker && candleSeries) {
+                    if (msg.ev === 'AM' && activoActual && msg.sym === activoActual.ticker && candleSeries) {
                         candleSeries.update({
                             time: msg.s / 1000,
                             open: msg.o,
@@ -730,18 +1219,16 @@
             };
             
             socket.onerror = () => {
-                log('WebSocket error', 'error');
-                updateConnectionStatus(false, 'Error');
+                updateStatus('offline', 'ERROR');
+                document.getElementById('ws-status').textContent = '🔴 Error';
             };
             
             socket.onclose = () => {
-                log('WebSocket cerrado', 'warning');
-                updateConnectionStatus(false, 'Disconnected');
-                
+                updateStatus('offline', 'OFFLINE');
+                document.getElementById('ws-status').textContent = '🔴 Desconectado';
                 if (reconnectAttempts < 5) {
                     reconnectAttempts++;
-                    const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
-                    setTimeout(conectarWebSocket, delay);
+                    setTimeout(conectarWebSocket, 2000 * reconnectAttempts);
                 }
             };
         }
@@ -749,22 +1236,21 @@
         function suscribirTickers() {
             const allTickers = new Set();
             Object.values(INDICES_DATA).forEach(indice => {
-                indice.empresas.forEach(e => allTickers.add(e.ticker));
+                indice.empresas.forEach(e => {
+                    if (!e.ticker.includes('.')) allTickers.add(e.ticker);
+                });
             });
             
             const subs = Array.from(allTickers).map(t => `T.${t},AM.${t}`).join(',');
             socket.send(JSON.stringify({ action: 'subscribe', params: subs }));
-            log(`Suscrito a ${allTickers.size} tickers`, 'info');
         }
 
         function procesarTrade(msg) {
             const ticker = msg.sym;
             const price = msg.p;
             
-            const oldPrice = preciosEnTiempoReal[ticker] || price;
             preciosEnTiempoReal[ticker] = price;
             
-            // Actualizar histórico
             const hist = datosHistoricos[ticker];
             if (hist) {
                 hist.change = price - hist.previousClose;
@@ -772,198 +1258,194 @@
                     ((price - hist.previousClose) / hist.previousClose) * 100 : 0;
             }
             
-            tradeCount++;
-            document.getElementById('trade-count').textContent = tradeCount.toLocaleString();
+            // Actualizar empresas
+            Object.values(INDICES_DATA).forEach(indice => {
+                const empresa = indice.empresas.find(e => e.ticker === ticker);
+                if (empresa) {
+                    empresa.price = price;
+                    if (hist) {
+                        empresa.change = hist.change;
+                        empresa.changePercent = hist.changePercent;
+                    }
+                }
+            });
             
-            // Actualizar UI si es el activo actual
-            if (ticker === activoActual.ticker) {
-                actualizarPrecioUI(price, oldPrice);
+            if (activoActual && ticker === activoActual.ticker) {
+                updateChartPrice(price);
             }
             
-            // Recalcular y re-renderizar (con debounce)
-            clearTimeout(window.rankingTimeout);
-            window.rankingTimeout = setTimeout(() => {
+            clearTimeout(window.renderTimeout);
+            window.renderTimeout = setTimeout(() => {
                 calcularPesos();
-                renderizarRanking();
+                renderHomeContent();
             }, 300);
         }
 
-        function updateConnectionStatus(connected, text, latency = null) {
-            const dot = document.getElementById('connection-dot');
-            const status = document.getElementById('connection-status');
-            const latencyEl = document.getElementById('latency-display');
+        function updateStatus(status, text) {
+            const dot = document.getElementById('status-dot');
+            const textEl = document.getElementById('status-text');
             
-            dot.className = `status-dot ${connected ? 'status-connected' : 'status-disconnected'}`;
-            status.textContent = text;
-            status.className = `text-xs ${connected ? 'text-emerald-400' : 'text-zinc-400'}`;
-            
-            if (latency !== null && connected) {
-                latencyEl.textContent = `${latency}ms`;
-                latencyEl.classList.remove('hidden');
-            }
-        }
-
-        function updateLatency() {
-            const latency = Date.now() - lastMessageTime;
-            const latencyEl = document.getElementById('latency-display');
-            if (latency < 5000) {
-                latencyEl.textContent = `${Math.min(latency, 999)}ms`;
-            }
+            dot.className = 'status-dot ' + (status === 'live' ? 'status-live' : 'status-offline');
+            textEl.textContent = text;
+            textEl.style.color = status === 'live' ? '#26a69a' : (status === 'loading' ? '#f7931a' : '#ef5350');
         }
 
         // ==========================================
-        // UI UPDATES
+        // RENDERIZAR HOME
         // ==========================================
-        function actualizarPrecioUI(precio, oldPrice = precio) {
-            const priceEl = document.getElementById('price');
-            const isUp = precio >= oldPrice;
+        function renderHomeContent() {
+            const container = document.getElementById('home-content');
+            let html = '';
             
-            priceEl.textContent = `$${precio.toFixed(2)}`;
-            priceEl.className = `text-4xl font-bold mono ${isUp ? 'up pulse-up' : 'down pulse-down'}`;
+            const indices = currentFilter === 'all' 
+                ? ['dow', 'nasdaq', 'sp500'] 
+                : [currentFilter];
             
-            // Cambios
-            const hist = datosHistoricos[activoActual.ticker];
-            if (hist) {
-                const change = hist.change;
-                const changePct = hist.changePercent;
-                const positive = change >= 0;
-                const colorClass = positive ? 'up' : 'down';
-                const sign = positive ? '+' : '';
+            indices.forEach(key => {
+                const indice = INDICES_DATA[key];
+                const empresas = indice.empresas;
+                const isExpanded = expandedSections[key];
+                const showCount = isExpanded ? empresas.length : 10;
+                const visibleEmpresas = empresas.slice(0, showCount);
                 
-                document.getElementById('price-change').textContent = `${sign}${change.toFixed(2)}`;
-                document.getElementById('price-change').className = `font-semibold mono ${colorClass}`;
-                
-                document.getElementById('price-change-percent').textContent = `(${sign}${changePct.toFixed(2)}%)`;
-                document.getElementById('price-change-percent').className = `font-semibold mono ${colorClass}`;
-                
-                document.getElementById('arrow-indicator').textContent = positive ? '▲' : '▼';
-                document.getElementById('arrow-indicator').className = `text-2xl ${colorClass}`;
-            }
-            
-            document.getElementById('last-trade-time').textContent = new Date().toLocaleTimeString('en-US', { 
-                hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false 
-            });
-        }
-
-        function renderizarRanking() {
-            const container = document.getElementById('ranking-container');
-            const indice = INDICES_DATA[indiceActual];
-            const empresas = indice.empresas;
-            
-            document.getElementById('weight-method').textContent = indice.metodo;
-            
-            // Calcular total weight
-            const totalWeight = empresas.reduce((sum, e) => sum + e.weight, 0);
-            document.getElementById('total-weight').textContent = `${totalWeight.toFixed(2)}%`;
-            
-            container.innerHTML = '';
-            
-            empresas.forEach((empresa, index) => {
-                const isPositive = empresa.change >= 0;
-                const colorClass = isPositive ? 'up' : 'down';
-                const arrow = isPositive ? '▲' : '▼';
-                
-                const row = document.createElement('div');
-                row.className = `ranking-row ${empresa.ticker === activoActual.ticker ? 'active' : ''}`;
-                row.onclick = () => cambiarActivo(empresa);
-                
-                row.innerHTML = `
-                    <div class="font-bold text-zinc-500">${index + 1}</div>
-                    <div class="font-bold text-white">${empresa.ticker}</div>
-                    <div class="text-cyan-400 font-semibold mono">${empresa.weight.toFixed(2)}%</div>
-                    <div class="text-white mono font-medium">${empresa.price > 0 ? '$' + empresa.price.toFixed(2) : '--'}</div>
-                    <div class="${colorClass} mono">${empresa.change !== 0 ? (isPositive ? '+' : '') + empresa.change.toFixed(2) : '--'}</div>
-                    <div class="${colorClass} font-semibold">${arrow} ${Math.abs(empresa.changePercent).toFixed(2)}%</div>
+                // Header de sección
+                html += `
+                    <div class="section-header">
+                        <span>${indice.nombre}</span>
+                        <span class="section-count">${isExpanded ? empresas.length : '10'} / ${indice.total} componentes</span>
+                    </div>
                 `;
                 
-                container.appendChild(row);
+                // Assets con ranking
+                visibleEmpresas.forEach((empresa, index) => {
+                    html += renderAssetItem(empresa, key, index + 1);
+                });
+                
+                // Botón Ver más / Ver menos
+                if (empresas.length > 10) {
+                    const remaining = empresas.length - 10;
+                    html += `
+                        <div class="ver-mas-btn" onclick="toggleSection('${key}')">
+                            ${isExpanded 
+                                ? '▲ Ver menos (mostrar top 10)' 
+                                : `▼ Ver más (+${remaining} componentes)`
+                            }
+                        </div>
+                    `;
+                }
             });
+            
+            container.innerHTML = html;
         }
 
-        function switchIndex(index) {
-            indiceActual = index;
+        function renderAssetItem(empresa, indiceKey, rank) {
+            const isPositive = empresa.change >= 0;
+            const colorClass = empresa.change === 0 ? 'neutral' : (isPositive ? 'up' : 'down');
+            const sign = isPositive && empresa.change !== 0 ? '+' : '';
             
-            // Update tabs
-            document.querySelectorAll('.index-tab').forEach(tab => tab.classList.remove('active'));
-            document.getElementById(`tab-${index}`).classList.add('active');
+            return `
+                <div class="asset-item" onclick="selectAsset('${empresa.ticker}', '${indiceKey}')">
+                    <div class="asset-rank">#${rank}</div>
+                    <div class="asset-logo">${getLogoHTML(empresa.ticker)}</div>
+                    <div class="asset-info">
+                        <div class="asset-ticker">${empresa.ticker}</div>
+                        <div class="asset-name">${empresa.nombre}</div>
+                    </div>
+                    <div class="asset-data">
+                        <div class="asset-price">${formatPrice(empresa.price)}</div>
+                        <div class="asset-change">
+                            <span class="${colorClass}">${sign}${empresa.change.toFixed(2)}</span>
+                            <span class="${colorClass}">${sign}${empresa.changePercent.toFixed(2)}%</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function toggleSection(key) {
+            expandedSections[key] = !expandedSections[key];
+            renderHomeContent();
             
-            // Re-render
-            renderizarRanking();
-            
-            // Select first item
-            const primerActivo = INDICES_DATA[index].empresas[0];
-            if (primerActivo) {
-                cambiarActivo(primerActivo);
+            // Scroll al inicio de la sección si se expande
+            if (expandedSections[key]) {
+                setTimeout(() => {
+                    const headers = document.querySelectorAll('.section-header');
+                    const indexMap = { dow: 0, nasdaq: 1, sp500: 2 };
+                    if (currentFilter === 'all' && headers[indexMap[key]]) {
+                        headers[indexMap[key]].scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                }, 100);
             }
+        }
+
+        function getLogoHTML(ticker) {
+            const colors = {
+                'AAPL': '#A2AAAD', 'MSFT': '#00A4EF', 'GOOGL': '#4285F4', 'GOOG': '#4285F4',
+                'AMZN': '#FF9900', 'META': '#1877F2', 'NVDA': '#76B900', 'TSLA': '#CC0000',
+                'JPM': '#0A3D6E', 'V': '#1A1F71', 'MA': '#EB001B', 'BAC': '#012169',
+                'HD': '#F96302', 'WMT': '#0071CE', 'KO': '#F40009', 'PEP': '#004B93',
+                'NKE': '#000000', 'DIS': '#113CCF', 'NFLX': '#E50914', 'COST': '#E31837',
+                'GS': '#6BA4D5', 'UNH': '#002677', 'CAT': '#FFCD00', 'CRM': '#00A1E0',
+                'AMGN': '#0072CE', 'MCD': '#FFC72C', 'AXP': '#016FD0', 'IBM': '#0530AD'
+            };
             
-            log(`Índice: ${INDICES_DATA[index].nombre}`, 'info');
+            const bg = colors[ticker] || '#2a2e39';
+            return `<div style="width:100%;height:100%;background:${bg};display:flex;align-items:center;justify-content:center;border-radius:50%;font-size:10px;font-weight:700;color:white;">${ticker.substring(0,2)}</div>`;
+        }
+
+        function formatPrice(price) {
+            if (!price) return '--';
+            return price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         }
 
         // ==========================================
-        // CAMBIAR ACTIVO
+        // SELECCIONAR ACTIVO
         // ==========================================
-        async function cambiarActivo(empresa) {
-            if (isLoading) return;
-            isLoading = true;
+        async function selectAsset(ticker, indiceKey) {
+            const empresa = INDICES_DATA[indiceKey].empresas.find(e => e.ticker === ticker);
+            if (!empresa) return;
             
             activoActual = empresa;
             
-            // Update UI
-            document.getElementById('ticker-name').textContent = empresa.ticker;
-            document.getElementById('company-name').textContent = empresa.nombre;
-            document.getElementById('empresa-sector').textContent = empresa.sector;
-            document.getElementById('empresa-weight').textContent = `${empresa.weight.toFixed(2)}%`;
+            document.getElementById('chart-ticker').textContent = ticker;
+            document.getElementById('chart-name').textContent = empresa.nombre;
+            document.getElementById('chat-ticker').textContent = ticker;
             
-            // Badges de índices
-            const indices = obtenerIndicesEmpresa(empresa.ticker);
-            document.getElementById('empresa-indices').textContent = indices.join(', ') || 'N/A';
+            updateChartPrice(empresa.price);
             
-            const badgesContainer = document.getElementById('indices-badges');
-            badgesContainer.innerHTML = '';
-            indices.forEach(idx => {
-                const colors = {
-                    'DOW': 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
-                    'NASDAQ': 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30',
-                    'S&P500': 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
-                };
-                const badge = document.createElement('span');
-                badge.className = `text-[8px] px-1.5 py-0.5 rounded border ${colors[idx] || 'bg-zinc-700 text-zinc-300'}`;
-                badge.textContent = idx;
-                badgesContainer.appendChild(badge);
-            });
+            // Badges
+            const badges = [];
+            if (INDICES_DATA.dow.empresas.some(e => e.ticker === ticker)) badges.push('DOW');
+            if (INDICES_DATA.nasdaq.empresas.some(e => e.ticker === ticker)) badges.push('NDX');
+            if (INDICES_DATA.sp500.empresas.some(e => e.ticker === ticker)) badges.push('SPX');
             
-            // Rank en índice actual
-            const rank = INDICES_DATA[indiceActual].empresas.findIndex(e => e.ticker === empresa.ticker) + 1;
-            document.getElementById('empresa-rank').textContent = rank > 0 ? `#${rank}` : '--';
+            document.getElementById('chart-badges').innerHTML = badges.map(b => {
+                const colors = { 'DOW': '#f7931a', 'NDX': '#00d4ff', 'SPX': '#26a69a' };
+                return `<span style="font-size:11px;padding:4px 10px;border-radius:4px;background:${colors[b]}22;color:${colors[b]};border:1px solid ${colors[b]}44;">${b}</span>`;
+            }).join('');
             
-            // Histórico
-            const hist = datosHistoricos[empresa.ticker];
-            if (hist) {
-                document.getElementById('empresa-prev-close').textContent = `$${hist.previousClose.toFixed(2)}`;
-                document.getElementById('empresa-open').textContent = `$${hist.open.toFixed(2)}`;
-            }
-            
-            // Precio actual
-            const precio = preciosEnTiempoReal[empresa.ticker];
-            if (precio) {
-                actualizarPrecioUI(precio);
-            }
-            
-            // Re-render ranking para highlight
-            renderizarRanking();
-            
-            // Cargar gráfica
-            await cargarDatosGrafica(empresa.ticker);
-            
-            isLoading = false;
+            switchView('chart');
+            await cargarDatosGrafica(ticker);
         }
 
-        function obtenerIndicesEmpresa(ticker) {
-            const indices = [];
-            if (INDICES_DATA.dow.empresas.some(e => e.ticker === ticker)) indices.push('DOW');
-            if (INDICES_DATA.nasdaq.empresas.some(e => e.ticker === ticker)) indices.push('NASDAQ');
-            if (INDICES_DATA.sp500.empresas.some(e => e.ticker === ticker)) indices.push('S&P500');
-            return indices;
+        function updateChartPrice(price) {
+            if (!activoActual) return;
+            
+            const hist = datosHistoricos[activoActual.ticker];
+            const change = hist?.change || 0;
+            const changePct = hist?.changePercent || 0;
+            const isPositive = change >= 0;
+            const colorClass = change === 0 ? 'neutral' : (isPositive ? 'up' : 'down');
+            const sign = isPositive && change !== 0 ? '+' : '';
+            
+            document.getElementById('chart-price').textContent = `$${formatPrice(price)}`;
+            document.getElementById('chart-price').className = `chart-price-large ${colorClass}`;
+            
+            document.getElementById('chart-change').textContent = `${sign}${change.toFixed(2)}`;
+            document.getElementById('chart-change').className = colorClass;
+            
+            document.getElementById('chart-pct').textContent = `(${sign}${changePct.toFixed(2)}%)`;
+            document.getElementById('chart-pct').className = colorClass;
         }
 
         // ==========================================
@@ -974,45 +1456,48 @@
             
             chart = LightweightCharts.createChart(container, {
                 layout: { 
-                    background: { color: 'transparent' }, 
-                    textColor: '#a1a1aa' 
+                    background: { color: '#131722' }, 
+                    textColor: '#787b86' 
                 },
                 grid: { 
-                    vertLines: { color: 'rgba(63, 63, 70, 0.3)' }, 
-                    horzLines: { color: 'rgba(63, 63, 70, 0.3)' } 
+                    vertLines: { color: '#2a2e39' }, 
+                    horzLines: { color: '#2a2e39' } 
                 },
                 timeScale: { 
                     timeVisible: true, 
-                    secondsVisible: true, 
-                    borderColor: '#27272a' 
+                    secondsVisible: false,
+                    borderColor: '#2a2e39' 
                 },
-                rightPriceScale: { borderColor: '#27272a' },
-                crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
-                autoSize: true
+                rightPriceScale: { borderColor: '#2a2e39' },
+                crosshair: { mode: LightweightCharts.CrosshairMode.Normal }
             });
             
             candleSeries = chart.addCandlestickSeries({
-                upColor: '#10b981',
-                downColor: '#ef4444',
+                upColor: '#26a69a',
+                downColor: '#ef5350',
                 borderVisible: false,
-                wickUpColor: '#10b981',
-                wickDownColor: '#ef4444'
+                wickUpColor: '#26a69a',
+                wickDownColor: '#ef5350'
             });
 
-            window.addEventListener('resize', () => {
-                chart.applyOptions({ width: container.clientWidth, height: container.clientHeight });
+            const resizeObserver = new ResizeObserver(entries => {
+                if (entries.length > 0) {
+                    const { width, height } = entries[0].contentRect;
+                    chart.applyOptions({ width, height });
+                }
             });
+            resizeObserver.observe(container);
         }
 
         async function cargarDatosGrafica(ticker) {
             const endDate = new Date();
             const startDate = new Date();
-            startDate.setDate(startDate.getDate() - 5);
+            startDate.setDate(startDate.getDate() - 7);
             
             const from = startDate.toISOString().split('T')[0];
             const to = endDate.toISOString().split('T')[0];
             
-            const url = `https://api.polygon.io/v2/aggs/ticker/${ticker}/range/1/minute/${from}/${to}?adjusted=true&sort=asc&limit=5000&apiKey=${API_KEY}`;
+            const url = `https://api.polygon.io/v2/aggs/ticker/${ticker}/range/5/minute/${from}/${to}?adjusted=true&sort=asc&limit=5000&apiKey=${API_KEY}`;
             
             try {
                 const response = await fetch(url);
@@ -1031,23 +1516,168 @@
                     chart.timeScale().fitContent();
                 }
             } catch (error) {
-                log(`Error gráfica: ${error.message}`, 'error');
+                console.error('Error:', error);
             }
+        }
+
+        // ==========================================
+        // BÚSQUEDA
+        // ==========================================
+        function handleSearch(query) {
+            const container = document.getElementById('search-results');
+            
+            if (!query || query.length < 1) {
+                container.innerHTML = '<div class="p-4 text-center text-[#787b86]">Busca cualquier activo por ticker o nombre</div>';
+                return;
+            }
+            
+            const results = [];
+            const queryLower = query.toLowerCase();
+            
+            Object.entries(INDICES_DATA).forEach(([key, indice]) => {
+                indice.empresas.forEach((empresa, index) => {
+                    if (empresa.ticker.toLowerCase().includes(queryLower) || 
+                        empresa.nombre.toLowerCase().includes(queryLower)) {
+                        if (!results.find(r => r.ticker === empresa.ticker)) {
+                            results.push({ ...empresa, indice: key, rank: index + 1 });
+                        }
+                    }
+                });
+            });
+            
+            if (results.length === 0) {
+                container.innerHTML = '<div class="p-4 text-center text-[#787b86]">No se encontraron resultados</div>';
+                return;
+            }
+            
+            container.innerHTML = results.slice(0, 20).map(e => renderAssetItem(e, e.indice, e.rank)).join('');
+        }
+
+        // ==========================================
+        // COMUNIDAD
+        // ==========================================
+        function renderCommunity() {
+            const posts = [
+                { user: 'TraderPro', avatar: 'TP', time: 'hace 5 min', content: '🚀 NVDA rompiendo máximos! El momentum está increíble después del earnings. Long desde $140.' },
+                { user: 'MarketWatch', avatar: 'MW', time: 'hace 12 min', content: 'El SPX muestra señales de agotamiento en el RSI diario. Ojo con la resistencia en 5850.' },
+                { user: 'TechAnalyst', avatar: 'TA', time: 'hace 28 min', content: 'AAPL con divergencia bajista en timeframe de 4H. Podría haber retroceso hacia $225.' },
+                { user: 'SwingTrader', avatar: 'ST', time: 'hace 45 min', content: 'Entrada en AMZN hoy. El soporte en $185 aguantó perfectamente. Target $205.' },
+                { user: 'IndexFund', avatar: 'IF', time: 'hace 1 hora', content: 'El DOW recuperándose bien. Los bancos (JPM, GS) están empujando fuerte el índice.' },
+                { user: 'OptionsKing', avatar: 'OK', time: 'hace 2 horas', content: 'IV en TSLA está elevada antes del evento. Vendi call spreads para aprovechar el crush.' }
+            ];
+            
+            document.getElementById('community-content').innerHTML = posts.map(p => `
+                <div class="community-post">
+                    <div class="post-header">
+                        <div class="post-avatar">${p.avatar}</div>
+                        <div>
+                            <div class="post-user">${p.user}</div>
+                            <div class="post-time">${p.time}</div>
+                        </div>
+                    </div>
+                    <div class="post-content">${p.content}</div>
+                </div>
+            `).join('');
+        }
+
+        // ==========================================
+        // CHAT
+        // ==========================================
+        function sendChatMessage() {
+            const input = document.getElementById('chat-input');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            const chatContainer = document.getElementById('chat-messages');
+            const time = new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+            
+            chatContainer.insertAdjacentHTML('beforeend', `
+                <div class="chat-message">
+                    <div class="flex justify-between">
+                        <span class="chat-message-user">Tú</span>
+                        <span class="chat-message-time">${time}</span>
+                    </div>
+                    <div class="chat-message-text">${message}</div>
+                </div>
+            `);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+            input.value = '';
+            
+            // Respuesta simulada
+            setTimeout(() => {
+                const responses = [
+                    'Interesante análisis! 📊',
+                    'De acuerdo contigo 👍',
+                    'Hay que estar atentos al volumen',
+                    'El mercado está muy volátil hoy',
+                    'Buen punto, lo tendré en cuenta',
+                    'Gracias por compartir!'
+                ];
+                const users = ['Trader123', 'MarketPro', 'StockGuru', 'AlphaSeeker'];
+                
+                chatContainer.insertAdjacentHTML('beforeend', `
+                    <div class="chat-message">
+                        <div class="flex justify-between">
+                            <span class="chat-message-user">${users[Math.floor(Math.random() * users.length)]}</span>
+                            <span class="chat-message-time">${new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}</span>
+                        </div>
+                        <div class="chat-message-text">${responses[Math.floor(Math.random() * responses.length)]}</div>
+                    </div>
+                `);
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }, 1500 + Math.random() * 2000);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('chat-input').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') sendChatMessage();
+            });
+        });
+
+        // ==========================================
+        // MARKET STATUS
+        // ==========================================
+        function updateMarketStatus() {
+            const now = new Date();
+            const nyTime = new Date(now.toLocaleString("en-US", {timeZone: "America/New_York"}));
+            const hour = nyTime.getHours();
+            const minute = nyTime.getMinutes();
+            const day = nyTime.getDay();
+            
+            document.getElementById('ny-time').textContent = nyTime.toLocaleTimeString('en-US', { 
+                hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true 
+            });
+            
+            let status = '🔴 Cerrado';
+            
+            if (day !== 0 && day !== 6) {
+                const timeInMinutes = hour * 60 + minute;
+                if (timeInMinutes >= 240 && timeInMinutes < 570) {
+                    status = '🟡 Pre-Market';
+                } else if (timeInMinutes >= 570 && timeInMinutes < 960) {
+                    status = '🟢 Abierto';
+                } else if (timeInMinutes >= 960 && timeInMinutes < 1200) {
+                    status = '🔵 After Hours';
+                }
+            }
+            
+            document.getElementById('market-status').textContent = status;
+            
+            onlineUsers += Math.floor(Math.random() * 10) - 5;
+            onlineUsers = Math.max(50, Math.min(800, onlineUsers));
+            document.getElementById('chat-count').textContent = `${onlineUsers} online`;
         }
 
         // ==========================================
         // INICIALIZACIÓN
         // ==========================================
         window.onload = async () => {
-            log('Trading Terminal v4.0 iniciado', 'success');
-            
             crearGrafica();
-            
-            updateMarketIndicators();
-            setInterval(updateMarketIndicators, 30000);
+            updateMarketStatus();
+            setInterval(updateMarketStatus, 30000);
             
             await cargarDatosIniciales();
-            
             conectarWebSocket();
         };
         
@@ -1056,3 +1686,4 @@
         };
     </script>
 </body>
+</html>
