@@ -3,156 +3,1056 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trading Terminal PRO - Mobile Friendly</title>
+    <title>Trading Terminal PRO v4.0 - SlickCharts Sync</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
     <style>
-        .up { color: #22c55e; } .down { color: #ef4444; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
-        .pulse { animation: pulse 0.3s ease-in-out; }
-        .chat-slide { display: none; }
-        .chat-slide.active { display: block; }
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 10px; }
-        /* Altura fija para la gráfica en móviles */
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+        
+        * { font-family: 'Inter', sans-serif; }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+        
+        .up { color: #10b981; } 
+        .down { color: #ef4444; }
+        
+        @keyframes pulse-green { 
+            0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+            50% { box-shadow: 0 0 0 4px rgba(16, 185, 129, 0); }
+        }
+        @keyframes pulse-red { 
+            0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+            50% { box-shadow: 0 0 0 4px rgba(239, 68, 68, 0); }
+        }
+        
+        .pulse-up { animation: pulse-green 1s ease-in-out; }
+        .pulse-down { animation: pulse-red 1s ease-in-out; }
+        
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #18181b; }
+        ::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #52525b; }
+        
         #chart-container { height: 350px; }
         @media (min-width: 1024px) { #chart-container { height: 100%; } }
+        
+        .ranking-table { max-height: 450px; overflow-y: auto; }
+        
+        .ranking-row {
+            cursor: pointer;
+            transition: all 0.15s ease;
+            display: grid;
+            grid-template-columns: 8% 14% 14% 22% 18% 24%;
+            gap: 4px;
+            padding: 6px 8px;
+            font-size: 10px;
+            align-items: center;
+            border-bottom: 1px solid rgba(63, 63, 70, 0.3);
+        }
+        
+        .ranking-row:hover { background: rgba(59, 130, 246, 0.1); }
+        .ranking-row.active {
+            background: rgba(59, 130, 246, 0.2);
+            border-left: 3px solid #3b82f6;
+        }
+        
+        .table-header {
+            display: grid;
+            grid-template-columns: 8% 14% 14% 22% 18% 24%;
+            gap: 4px;
+            padding: 8px;
+            font-size: 9px;
+            background: rgba(39, 39, 42, 0.5);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .status-connected { background: #10b981; animation: pulse-green 2s infinite; }
+        .status-disconnected { background: #ef4444; }
+        
+        .latency-badge {
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+        }
+        
+        .index-tab {
+            cursor: pointer;
+            padding: 10px 16px;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+            font-weight: 600;
+            font-size: 12px;
+        }
+        .index-tab:hover { background: rgba(59, 130, 246, 0.1); }
+        .index-tab.active { 
+            border-bottom-color: #3b82f6; 
+            color: #3b82f6;
+            background: rgba(59, 130, 246, 0.05);
+        }
     </style>
 </head>
-<body class="bg-black text-white min-h-screen font-sans">
-
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-2 p-2 h-auto lg:h-screen lg:overflow-hidden">
-        
-        <aside class="col-span-1 lg:col-span-2 bg-zinc-900 rounded-xl border border-zinc-800 flex flex-col p-4">
-            <h2 class="text-blue-500 font-bold mb-4 lg:mb-6 italic">TERMINAL v1</h2>
-            <nav class="flex lg:flex-col gap-2 overflow-x-auto lg:overflow-x-visible">
-                <details class="group min-w-[150px] lg:min-w-0">
-                    <summary class="list-none cursor-pointer p-2 hover:bg-zinc-800 rounded flex justify-between items-center text-sm font-semibold">
-                        Activos <span class="group-open:rotate-180 transition-transform">▼</span>
-                    </summary>
-                    <div class="pl-4 py-2 text-xs text-zinc-500 space-y-2">
-                        <p class="hover:text-white cursor-pointer">AAPL</p>
-                        <p class="hover:text-white cursor-pointer">TSLA</p>
+<body class="bg-zinc-950 text-white min-h-screen">
+    
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 p-3 h-auto lg:h-screen lg:overflow-hidden">
+            
+        <!-- SIDEBAR IZQUIERDO - RANKINGS -->
+        <aside class="col-span-1 lg:col-span-3 bg-zinc-900/80 rounded-xl border border-zinc-800 flex flex-col overflow-hidden">
+            
+            <!-- Header -->
+            <div class="p-4 border-b border-zinc-800 flex justify-between items-center">
+                <div>
+                    <h2 class="text-blue-500 font-bold text-lg tracking-tight">TERMINAL <span class="text-zinc-500 font-normal text-sm">v4.0</span></h2>
+                    <p class="text-zinc-500 text-[10px] mt-1">Synced with SlickCharts</p>
+                </div>
+                <div class="text-right">
+                    <div class="flex items-center gap-2">
+                        <span class="status-dot status-disconnected" id="connection-dot"></span>
+                        <span id="connection-status" class="text-zinc-400 text-xs">Connecting...</span>
                     </div>
-                </details>
-                <details class="group min-w-[150px] lg:min-w-0">
-                    <summary class="list-none cursor-pointer p-2 hover:bg-zinc-800 rounded flex justify-between items-center text-sm font-semibold">
-                        Ajustes <span class="group-open:rotate-180 transition-transform">▼</span>
-                    </summary>
-                    <div class="pl-4 py-2 text-xs text-zinc-500">Red: OK</div>
-                </details>
-            </nav>
+                    <div id="latency-display" class="latency-badge mt-1 hidden">--ms</div>
+                </div>
+            </div>
+            
+            <!-- Index Tabs -->
+            <div class="flex border-b border-zinc-800">
+                <button onclick="switchIndex('dow')" id="tab-dow" class="index-tab active flex-1">
+                    📊 DOW <span class="text-[9px] text-yellow-500 ml-1">(30)</span>
+                </button>
+                <button onclick="switchIndex('nasdaq')" id="tab-nasdaq" class="index-tab flex-1">
+                    💻 NDX <span class="text-[9px] text-cyan-500 ml-1">(101)</span>
+                </button>
+                <button onclick="switchIndex('sp500')" id="tab-sp500" class="index-tab flex-1">
+                    📈 SPX <span class="text-[9px] text-emerald-500 ml-1">(503)</span>
+                </button>
+            </div>
+            
+            <!-- Ranking Content -->
+            <div class="flex-1 overflow-hidden flex flex-col">
+                <div class="table-header font-bold text-zinc-400 uppercase tracking-wider">
+                    <div>#</div>
+                    <div>Ticker</div>
+                    <div>Weight</div>
+                    <div>Price</div>
+                    <div>Chg</div>
+                    <div>% Chg</div>
+                </div>
+                <div class="ranking-table flex-1" id="ranking-container">
+                    <p class="text-zinc-500 italic text-center py-8 text-xs">Cargando datos...</p>
+                </div>
+            </div>
+            
+            <!-- Index Info -->
+            <div class="p-3 border-t border-zinc-800 text-[10px] text-zinc-500">
+                <div class="flex justify-between">
+                    <span>Método:</span>
+                    <span id="weight-method" class="text-cyan-400">--</span>
+                </div>
+                <div class="flex justify-between mt-1">
+                    <span>Total Weight:</span>
+                    <span id="total-weight" class="text-white mono">100.00%</span>
+                </div>
+            </div>
         </aside>
 
-        <main class="col-span-1 lg:col-span-7 flex flex-col gap-2">
-            <div class="relative bg-zinc-950 rounded-xl border border-zinc-800 h-[400px] lg:h-2/3 overflow-hidden">
-                <div id="card-aapl" class="absolute top-2 left-2 z-10 bg-black/70 backdrop-blur-md p-3 rounded-xl border border-zinc-700 w-40 lg:w-48">
-                    <div class="flex justify-between items-center">
-                        <span class="text-base lg:text-lg font-bold">AAPL</span>
-                        <span id="latency" class="text-[8px] text-zinc-500">--ms</span>
+        <!-- ÁREA PRINCIPAL -->
+        <main class="col-span-1 lg:col-span-6 flex flex-col gap-3">
+            
+            <!-- Gráfico principal -->
+            <div class="relative bg-zinc-900/50 rounded-xl border border-zinc-800 h-[400px] lg:flex-1 overflow-hidden">
+                
+                <!-- Tarjeta flotante -->
+                <div id="card-activo" class="absolute top-3 left-3 z-10 bg-black/90 backdrop-blur-xl p-4 rounded-xl border border-zinc-700/50 w-72">
+                    
+                    <div class="flex justify-between items-start mb-3">
+                        <div>
+                            <span id="ticker-name" class="text-3xl font-bold mono">--</span>
+                            <p id="company-name" class="text-zinc-400 text-xs mt-1 truncate max-w-[180px]">--</p>
+                        </div>
+                        <div id="indices-badges" class="flex gap-1 flex-wrap justify-end max-w-[80px]"></div>
                     </div>
-                    <div id="price" class="text-xl lg:text-2xl font-mono font-bold">$0.00</div>
-                    <div id="status" class="text-[7px] uppercase text-zinc-500 mt-1">Conectando...</div>
+                    
+                    <div class="flex items-baseline gap-3 mb-2">
+                        <div id="price" class="text-4xl font-bold mono">$0.00</div>
+                        <div id="arrow-indicator" class="text-2xl"></div>
+                    </div>
+                    
+                    <div class="flex gap-4 mb-3">
+                        <div>
+                            <span class="text-zinc-500 text-[10px] block">Change</span>
+                            <span id="price-change" class="font-semibold mono">+0.00</span>
+                        </div>
+                        <div>
+                            <span class="text-zinc-500 text-[10px] block">% Change</span>
+                            <span id="price-change-percent" class="font-semibold mono">(+0.00%)</span>
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-between items-center text-[10px] text-zinc-500 border-t border-zinc-700/50 pt-3">
+                        <div id="market-hours-indicator" class="text-yellow-400 font-medium"></div>
+                        <span id="last-trade-time" class="mono">--:--:--</span>
+                    </div>
                 </div>
-                <div id="chart-container" class="w-full"></div>
+                
+                <div id="chart-container" class="w-full h-full"></div>
             </div>
 
-            <div class="bg-zinc-900 rounded-xl border border-zinc-800 p-2">
-                <details class="group" open>
-                    <summary class="list-none cursor-pointer p-2 flex justify-between items-center text-[10px] font-bold uppercase tracking-widest">
-                        Data Empresa <span class="group-open:rotate-180">▼</span>
-                    </summary>
-                    <div class="p-3 grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
-                        <div class="text-zinc-500">CEO: <span class="text-white">Tim Cook</span></div>
-                        <div class="text-zinc-500">Sede: <span class="text-white">Cupertino</span></div>
+            <!-- Panel de datos -->
+            <div class="bg-zinc-900/50 rounded-xl border border-zinc-800 p-4">
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-xs">
+                    <div>
+                        <span class="text-zinc-500 block text-[10px] uppercase tracking-wider">Sector</span>
+                        <span id="empresa-sector" class="text-white font-medium">--</span>
                     </div>
-                </details>
-            </div>
-
-            <div class="hidden lg:flex bg-blue-900/10 border border-blue-500/20 rounded-xl flex-1 items-center justify-center italic text-blue-400 text-xs text-center p-4">
-                Métricas de Volumen Avanzadas
+                    <div>
+                        <span class="text-zinc-500 block text-[10px] uppercase tracking-wider">Índices</span>
+                        <span id="empresa-indices" class="text-white font-medium">--</span>
+                    </div>
+                    <div>
+                        <span class="text-zinc-500 block text-[10px] uppercase tracking-wider">Weight Actual</span>
+                        <span id="empresa-weight" class="text-cyan-400 font-medium mono">--</span>
+                    </div>
+                    <div>
+                        <span class="text-zinc-500 block text-[10px] uppercase tracking-wider">Apertura</span>
+                        <span id="empresa-open" class="text-white font-medium mono">$0.00</span>
+                    </div>
+                    <div>
+                        <span class="text-zinc-500 block text-[10px] uppercase tracking-wider">Cierre Anterior</span>
+                        <span id="empresa-prev-close" class="text-white font-medium mono">$0.00</span>
+                    </div>
+                    <div>
+                        <span class="text-zinc-500 block text-[10px] uppercase tracking-wider">Rank en Índice</span>
+                        <span id="empresa-rank" class="text-yellow-400 font-bold">#--</span>
+                    </div>
+                </div>
             </div>
         </main>
 
-        <aside class="col-span-1 lg:col-span-3 flex flex-col gap-2 pb-4 lg:pb-0">
-            <div class="bg-zinc-900 rounded-xl border border-zinc-800 h-[300px] lg:h-1/2 flex flex-col overflow-hidden">
-                <div class="flex border-b border-zinc-800 text-[9px] font-bold uppercase">
-                    <button onclick="switchChat('general')" id="tab-general" class="flex-1 p-3 bg-zinc-800">General</button>
-                    <button onclick="switchChat('activo')" id="tab-activo" class="flex-1 p-3 hover:bg-zinc-800">AAPL Chat</button>
+        <!-- SIDEBAR DERECHO -->
+        <aside class="col-span-1 lg:col-span-3 flex flex-col gap-3">
+            
+            <!-- Log de actividad -->
+            <div class="bg-zinc-900/80 rounded-xl border border-zinc-800 flex-1 flex flex-col overflow-hidden">
+                <div class="p-3 border-b border-zinc-800 flex justify-between items-center">
+                    <span class="text-xs font-bold uppercase tracking-wider text-zinc-400">📋 Activity Log</span>
+                    <button onclick="clearLog()" class="text-[10px] text-zinc-500 hover:text-white transition">Clear</button>
                 </div>
-                <div class="flex-1 p-4 overflow-y-auto text-xs">
-                    <div id="chat-general" class="chat-slide active text-zinc-400 italic">Cargando mensajes globales...</div>
-                    <div id="chat-activo" class="chat-slide text-zinc-400 italic">Esperando actividad de Apple...</div>
+                <div id="activity-log" class="flex-1 p-3 overflow-y-auto text-[11px] space-y-1">
+                    <p class="text-zinc-500 italic">Iniciando terminal...</p>
                 </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-2 h-24 lg:flex-1 text-[9px] uppercase font-bold text-center">
-                <div class="bg-emerald-900/10 border border-emerald-500/20 rounded-xl flex items-center justify-center text-emerald-500">Vol 24h</div>
-                <div class="bg-emerald-900/10 border border-emerald-500/20 rounded-xl flex items-center justify-center text-emerald-500">RSI 14</div>
+            <!-- Stats -->
+            <div class="grid grid-cols-2 gap-3">
+                <div class="bg-zinc-900/80 border border-zinc-800 rounded-xl p-4 text-center">
+                    <div class="text-[10px] text-zinc-500 uppercase tracking-wider">Trades</div>
+                    <div id="trade-count" class="text-2xl font-bold mono text-emerald-500 mt-1">0</div>
+                </div>
+                <div class="bg-zinc-900/80 border border-zinc-800 rounded-xl p-4 text-center">
+                    <div class="text-[10px] text-zinc-500 uppercase tracking-wider">Tickers</div>
+                    <div id="ticker-count" class="text-2xl font-bold mono text-blue-500 mt-1">0</div>
+                </div>
+            </div>
+            
+            <!-- Market Status -->
+            <div class="bg-zinc-900/80 border border-zinc-800 rounded-xl p-4">
+                <div class="text-[10px] text-zinc-500 uppercase tracking-wider mb-2">Market Status</div>
+                <div id="market-status-detail" class="text-sm font-medium text-yellow-400">--</div>
+                <div id="ny-time" class="text-xs text-zinc-500 mt-1 mono">--</div>
             </div>
         </aside>
-
     </div>
 
     <script>
+        // ==========================================
+        // CONFIGURACIÓN
+        // ==========================================
         const API_KEY = 'Q3I6b14c8HL2l_A7faplgnuMTXekxCUU';
-        let socket, chart, candleSeries;
+        let socket = null;
+        let reconnectAttempts = 0;
+        let lastMessageTime = Date.now();
+        
+        // ==========================================
+        // DATOS OFICIALES DE ÍNDICES - COMPLETOS
+        // Fuente: SlickCharts (enero 2025)
+        // ==========================================
+        
+        // DOW JONES - 30 COMPONENTES (Price-Weighted)
+        const DOW_COMPONENTS = [
+            { ticker: 'GS', nombre: 'Goldman Sachs', sector: 'Finanzas' },
+            { ticker: 'CAT', nombre: 'Caterpillar', sector: 'Industrial' },
+            { ticker: 'MSFT', nombre: 'Microsoft', sector: 'Tecnología' },
+            { ticker: 'HD', nombre: 'Home Depot', sector: 'Retail' },
+            { ticker: 'AXP', nombre: 'American Express', sector: 'Finanzas' },
+            { ticker: 'SHW', nombre: 'Sherwin-Williams', sector: 'Materiales' },
+            { ticker: 'AMGN', nombre: 'Amgen', sector: 'Salud' },
+            { ticker: 'V', nombre: 'Visa', sector: 'Finanzas' },
+            { ticker: 'IBM', nombre: 'IBM', sector: 'Tecnología' },
+            { ticker: 'MCD', nombre: "McDonald's", sector: 'Restaurantes' },
+            { ticker: 'JPM', nombre: 'JPMorgan Chase', sector: 'Finanzas' },
+            { ticker: 'UNH', nombre: 'UnitedHealth', sector: 'Salud' },
+            { ticker: 'TRV', nombre: 'Travelers', sector: 'Seguros' },
+            { ticker: 'AAPL', nombre: 'Apple', sector: 'Tecnología' },
+            { ticker: 'BA', nombre: 'Boeing', sector: 'Aeroespacial' },
+            { ticker: 'AMZN', nombre: 'Amazon', sector: 'E-commerce' },
+            { ticker: 'JNJ', nombre: 'Johnson & Johnson', sector: 'Salud' },
+            { ticker: 'CRM', nombre: 'Salesforce', sector: 'Tecnología' },
+            { ticker: 'HON', nombre: 'Honeywell', sector: 'Industrial' },
+            { ticker: 'NVDA', nombre: 'NVIDIA', sector: 'Semiconductores' },
+            { ticker: 'CVX', nombre: 'Chevron', sector: 'Energía' },
+            { ticker: 'MMM', nombre: '3M', sector: 'Industrial' },
+            { ticker: 'PG', nombre: 'Procter & Gamble', sector: 'Consumo' },
+            { ticker: 'WMT', nombre: 'Walmart', sector: 'Retail' },
+            { ticker: 'DIS', nombre: 'Disney', sector: 'Entretenimiento' },
+            { ticker: 'MRK', nombre: 'Merck', sector: 'Salud' },
+            { ticker: 'CSCO', nombre: 'Cisco', sector: 'Tecnología' },
+            { ticker: 'KO', nombre: 'Coca-Cola', sector: 'Bebidas' },
+            { ticker: 'NKE', nombre: 'Nike', sector: 'Consumo' },
+            { ticker: 'VZ', nombre: 'Verizon', sector: 'Telecom' }
+        ];
+        
+        // NASDAQ 100 - 101 COMPONENTES (Market-Cap Weighted)
+        const NASDAQ_COMPONENTS = [
+            { ticker: 'NVDA', nombre: 'NVIDIA', sector: 'Semiconductores' },
+            { ticker: 'AAPL', nombre: 'Apple', sector: 'Tecnología' },
+            { ticker: 'MSFT', nombre: 'Microsoft', sector: 'Tecnología' },
+            { ticker: 'AMZN', nombre: 'Amazon', sector: 'E-commerce' },
+            { ticker: 'GOOGL', nombre: 'Alphabet Class A', sector: 'Tecnología' },
+            { ticker: 'GOOG', nombre: 'Alphabet Class C', sector: 'Tecnología' },
+            { ticker: 'META', nombre: 'Meta Platforms', sector: 'Tecnología' },
+            { ticker: 'AVGO', nombre: 'Broadcom', sector: 'Semiconductores' },
+            { ticker: 'TSLA', nombre: 'Tesla', sector: 'Automotriz' },
+            { ticker: 'ASML', nombre: 'ASML Holding', sector: 'Semiconductores' },
+            { ticker: 'MU', nombre: 'Micron Technology', sector: 'Semiconductores' },
+            { ticker: 'COST', nombre: 'Costco', sector: 'Retail' },
+            { ticker: 'AMD', nombre: 'AMD', sector: 'Semiconductores' },
+            { ticker: 'PLTR', nombre: 'Palantir', sector: 'Software' },
+            { ticker: 'NFLX', nombre: 'Netflix', sector: 'Entretenimiento' },
+            { ticker: 'LRCX', nombre: 'Lam Research', sector: 'Semiconductores' },
+            { ticker: 'CSCO', nombre: 'Cisco', sector: 'Tecnología' },
+            { ticker: 'AZN', nombre: 'AstraZeneca', sector: 'Salud' },
+            { ticker: 'AMAT', nombre: 'Applied Materials', sector: 'Semiconductores' },
+            { ticker: 'INTC', nombre: 'Intel', sector: 'Semiconductores' },
+            { ticker: 'KLAC', nombre: 'KLA Corporation', sector: 'Semiconductores' },
+            { ticker: 'LIN', nombre: 'Linde', sector: 'Materiales' },
+            { ticker: 'TMUS', nombre: 'T-Mobile', sector: 'Telecom' },
+            { ticker: 'PEP', nombre: 'PepsiCo', sector: 'Bebidas' },
+            { ticker: 'TXN', nombre: 'Texas Instruments', sector: 'Semiconductores' },
+            { ticker: 'AMGN', nombre: 'Amgen', sector: 'Salud' },
+            { ticker: 'ISRG', nombre: 'Intuitive Surgical', sector: 'Salud' },
+            { ticker: 'APP', nombre: 'AppLovin', sector: 'Software' },
+            { ticker: 'SHOP', nombre: 'Shopify', sector: 'E-commerce' },
+            { ticker: 'GILD', nombre: 'Gilead Sciences', sector: 'Salud' },
+            { ticker: 'BKNG', nombre: 'Booking Holdings', sector: 'Viajes' },
+            { ticker: 'QCOM', nombre: 'Qualcomm', sector: 'Semiconductores' },
+            { ticker: 'ADI', nombre: 'Analog Devices', sector: 'Semiconductores' },
+            { ticker: 'PDD', nombre: 'PDD Holdings', sector: 'E-commerce' },
+            { ticker: 'INTU', nombre: 'Intuit', sector: 'Software' },
+            { ticker: 'HON', nombre: 'Honeywell', sector: 'Industrial' },
+            { ticker: 'PANW', nombre: 'Palo Alto Networks', sector: 'Ciberseguridad' },
+            { ticker: 'ARM', nombre: 'Arm Holdings', sector: 'Semiconductores' },
+            { ticker: 'ADBE', nombre: 'Adobe', sector: 'Software' },
+            { ticker: 'CRWD', nombre: 'CrowdStrike', sector: 'Ciberseguridad' },
+            { ticker: 'VRTX', nombre: 'Vertex Pharma', sector: 'Salud' },
+            { ticker: 'MELI', nombre: 'MercadoLibre', sector: 'E-commerce' },
+            { ticker: 'SBUX', nombre: 'Starbucks', sector: 'Restaurantes' },
+            { ticker: 'CEG', nombre: 'Constellation Energy', sector: 'Energía' },
+            { ticker: 'CMCSA', nombre: 'Comcast', sector: 'Telecom' },
+            { ticker: 'ADP', nombre: 'ADP', sector: 'Software' },
+            { ticker: 'SNPS', nombre: 'Synopsys', sector: 'Software' },
+            { ticker: 'DASH', nombre: 'DoorDash', sector: 'Tecnología' },
+            { ticker: 'CDNS', nombre: 'Cadence Design', sector: 'Software' },
+            { ticker: 'MAR', nombre: 'Marriott', sector: 'Hospitalidad' }
+        ];
+        
+        // S&P 500 - TOP 100 COMPONENTES (Market-Cap Weighted)
+        const SP500_COMPONENTS = [
+            { ticker: 'NVDA', nombre: 'NVIDIA', sector: 'Semiconductores' },
+            { ticker: 'AAPL', nombre: 'Apple', sector: 'Tecnología' },
+            { ticker: 'MSFT', nombre: 'Microsoft', sector: 'Tecnología' },
+            { ticker: 'AMZN', nombre: 'Amazon', sector: 'E-commerce' },
+            { ticker: 'GOOGL', nombre: 'Alphabet Class A', sector: 'Tecnología' },
+            { ticker: 'GOOG', nombre: 'Alphabet Class C', sector: 'Tecnología' },
+            { ticker: 'META', nombre: 'Meta Platforms', sector: 'Tecnología' },
+            { ticker: 'AVGO', nombre: 'Broadcom', sector: 'Semiconductores' },
+            { ticker: 'TSLA', nombre: 'Tesla', sector: 'Automotriz' },
+            { ticker: 'BRK.B', nombre: 'Berkshire Hathaway', sector: 'Finanzas' },
+            { ticker: 'WMT', nombre: 'Walmart', sector: 'Retail' },
+            { ticker: 'LLY', nombre: 'Eli Lilly', sector: 'Salud' },
+            { ticker: 'JPM', nombre: 'JPMorgan Chase', sector: 'Finanzas' },
+            { ticker: 'V', nombre: 'Visa', sector: 'Finanzas' },
+            { ticker: 'XOM', nombre: 'ExxonMobil', sector: 'Energía' },
+            { ticker: 'JNJ', nombre: 'Johnson & Johnson', sector: 'Salud' },
+            { ticker: 'ORCL', nombre: 'Oracle', sector: 'Software' },
+            { ticker: 'MU', nombre: 'Micron', sector: 'Semiconductores' },
+            { ticker: 'MA', nombre: 'Mastercard', sector: 'Finanzas' },
+            { ticker: 'COST', nombre: 'Costco', sector: 'Retail' },
+            { ticker: 'AMD', nombre: 'AMD', sector: 'Semiconductores' },
+            { ticker: 'ABBV', nombre: 'AbbVie', sector: 'Salud' },
+            { ticker: 'PLTR', nombre: 'Palantir', sector: 'Software' },
+            { ticker: 'BAC', nombre: 'Bank of America', sector: 'Finanzas' },
+            { ticker: 'HD', nombre: 'Home Depot', sector: 'Retail' },
+            { ticker: 'NFLX', nombre: 'Netflix', sector: 'Entretenimiento' },
+            { ticker: 'PG', nombre: 'Procter & Gamble', sector: 'Consumo' },
+            { ticker: 'CVX', nombre: 'Chevron', sector: 'Energía' },
+            { ticker: 'KO', nombre: 'Coca-Cola', sector: 'Bebidas' },
+            { ticker: 'CSCO', nombre: 'Cisco', sector: 'Tecnología' },
+            { ticker: 'GE', nombre: 'GE Aerospace', sector: 'Industrial' },
+            { ticker: 'CAT', nombre: 'Caterpillar', sector: 'Industrial' },
+            { ticker: 'LRCX', nombre: 'Lam Research', sector: 'Semiconductores' },
+            { ticker: 'MS', nombre: 'Morgan Stanley', sector: 'Finanzas' },
+            { ticker: 'GS', nombre: 'Goldman Sachs', sector: 'Finanzas' },
+            { ticker: 'PM', nombre: 'Philip Morris', sector: 'Tabaco' },
+            { ticker: 'IBM', nombre: 'IBM', sector: 'Tecnología' },
+            { ticker: 'WFC', nombre: 'Wells Fargo', sector: 'Finanzas' },
+            { ticker: 'RTX', nombre: 'RTX Corporation', sector: 'Defensa' },
+            { ticker: 'AMAT', nombre: 'Applied Materials', sector: 'Semiconductores' },
+            { ticker: 'UNH', nombre: 'UnitedHealth', sector: 'Salud' },
+            { ticker: 'MRK', nombre: 'Merck', sector: 'Salud' },
+            { ticker: 'AXP', nombre: 'American Express', sector: 'Finanzas' },
+            { ticker: 'INTC', nombre: 'Intel', sector: 'Semiconductores' },
+            { ticker: 'TMO', nombre: 'Thermo Fisher', sector: 'Salud' },
+            { ticker: 'MCD', nombre: "McDonald's", sector: 'Restaurantes' },
+            { ticker: 'KLAC', nombre: 'KLA Corporation', sector: 'Semiconductores' },
+            { ticker: 'CRM', nombre: 'Salesforce', sector: 'Software' },
+            { ticker: 'LIN', nombre: 'Linde', sector: 'Materiales' },
+            { ticker: 'TMUS', nombre: 'T-Mobile', sector: 'Telecom' }
+        ];
 
-        function switchChat(type) {
-            document.querySelectorAll('.chat-slide').forEach(s => s.classList.remove('active'));
-            document.getElementById('chat-' + type).classList.add('active');
-            document.getElementById('tab-general').classList.toggle('bg-zinc-800', type === 'general');
-            document.getElementById('tab-activo').classList.toggle('bg-zinc-800', type === 'activo');
+        // ==========================================
+        // ESTRUCTURAS DE DATOS
+        // ==========================================
+        const INDICES_DATA = {
+            dow: {
+                nombre: 'DOW JONES',
+                metodo: 'Price-Weighted',
+                empresas: DOW_COMPONENTS.map(e => ({ ...e, weight: 0, price: 0, change: 0, changePercent: 0 }))
+            },
+            nasdaq: {
+                nombre: 'NASDAQ 100',
+                metodo: 'Market-Cap Weighted',
+                empresas: NASDAQ_COMPONENTS.map(e => ({ ...e, weight: 0, price: 0, change: 0, changePercent: 0 }))
+            },
+            sp500: {
+                nombre: 'S&P 500',
+                metodo: 'Market-Cap Weighted',
+                empresas: SP500_COMPONENTS.map(e => ({ ...e, weight: 0, price: 0, change: 0, changePercent: 0 }))
+            }
+        };
+
+        // ==========================================
+        // VARIABLES GLOBALES
+        // ==========================================
+        let chart, candleSeries;
+        let activoActual = { ticker: 'NVDA', nombre: 'NVIDIA', sector: 'Semiconductores' };
+        let indiceActual = 'dow';
+        let preciosEnTiempoReal = {};
+        let datosHistoricos = {};
+        let tradeCount = 0;
+        let isLoading = false;
+
+        // ==========================================
+        // LOGGING SIMPLIFICADO
+        // ==========================================
+        function log(mensaje, tipo = 'info') {
+            const logEl = document.getElementById('activity-log');
+            const time = new Date().toLocaleTimeString('en-US', { 
+                hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false 
+            });
+            
+            const colors = {
+                'info': 'text-zinc-400',
+                'success': 'text-emerald-400',
+                'warning': 'text-yellow-400',
+                'error': 'text-red-400',
+                'trade': 'text-blue-400'
+            };
+            
+            const entry = document.createElement('div');
+            entry.className = colors[tipo] || 'text-zinc-400';
+            entry.innerHTML = `<span class="text-zinc-600">[${time}]</span> ${mensaje}`;
+            
+            logEl.insertBefore(entry, logEl.firstChild);
+            
+            // Limitar a 50 entradas
+            while (logEl.children.length > 50) {
+                logEl.removeChild(logEl.lastChild);
+            }
+        }
+        
+        function clearLog() {
+            document.getElementById('activity-log').innerHTML = '';
+            log('Log limpiado', 'info');
         }
 
-        function crearGrafica() {
-            const container = document.getElementById('chart-container');
-            chart = LightweightCharts.createChart(container, {
-                layout: { background: { color: 'transparent' }, textColor: '#d1d1d1' },
-                grid: { vertLines: { color: '#18181b' }, horzLines: { color: '#18181b' } },
-                timeScale: { timeVisible: true, secondsVisible: true },
-                autoSize: true // IMPORTANTE: Hace que la gráfica se ajuste al contenedor
+        // ==========================================
+        // MARKET HOURS
+        // ==========================================
+        function getMarketSession() {
+            const now = new Date();
+            const nyTime = new Date(now.toLocaleString("en-US", {timeZone: "America/New_York"}));
+            const hour = nyTime.getHours();
+            const minute = nyTime.getMinutes();
+            const day = nyTime.getDay();
+            const timeStr = nyTime.toLocaleTimeString('en-US', { 
+                hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true 
             });
-            candleSeries = chart.addCandlestickSeries({
-                upColor: '#22c55e', downColor: '#ef4444', borderVisible: false,
-                wickUpColor: '#22c55e', wickDownColor: '#ef4444'
-            });
-
-            // Re-ajustar al cambiar tamaño de pantalla
-            window.addEventListener('resize', () => {
-                chart.applyOptions({ width: container.clientWidth, height: container.clientHeight });
-            });
-
-            iniciarConexion();
+            
+            if (day === 0 || day === 6) {
+                return { session: 'CLOSED', label: 'CLOSED (Weekend)', time: timeStr };
+            }
+            
+            const timeInMinutes = hour * 60 + minute;
+            
+            if (timeInMinutes >= 240 && timeInMinutes < 570) {
+                return { session: 'PRE', label: 'PRE-MARKET', time: timeStr };
+            }
+            if (timeInMinutes >= 570 && timeInMinutes < 960) {
+                return { session: 'REGULAR', label: 'MARKET OPEN', time: timeStr };
+            }
+            if (timeInMinutes >= 960 && timeInMinutes < 1200) {
+                return { session: 'AFTER', label: 'AFTER HOURS', time: timeStr };
+            }
+            
+            return { session: 'CLOSED', label: 'CLOSED', time: timeStr };
         }
 
-        function iniciarConexion() {
+        function updateMarketIndicators() {
+            const market = getMarketSession();
+            
+            const config = {
+                'REGULAR': { color: 'text-emerald-400', dot: '🟢' },
+                'PRE': { color: 'text-yellow-400', dot: '🟡' },
+                'AFTER': { color: 'text-blue-400', dot: '🔵' },
+                'CLOSED': { color: 'text-red-400', dot: '🔴' }
+            }[market.session];
+            
+            document.getElementById('market-hours-indicator').innerHTML = `${config.dot} ${market.label}`;
+            document.getElementById('market-hours-indicator').className = `${config.color} font-medium text-[10px]`;
+            document.getElementById('market-status-detail').innerHTML = `${config.dot} ${market.label}`;
+            document.getElementById('market-status-detail').className = `text-sm font-medium ${config.color}`;
+            document.getElementById('ny-time').textContent = `NY: ${market.time}`;
+        }
+
+        // ==========================================
+        // CARGAR DATOS INICIALES
+        // ==========================================
+        async function cargarDatosIniciales() {
+            log('Cargando snapshot de precios...', 'info');
+            
+            // Obtener todos los tickers únicos
+            const allTickers = new Set();
+            Object.values(INDICES_DATA).forEach(indice => {
+                indice.empresas.forEach(e => allTickers.add(e.ticker));
+            });
+            
+            document.getElementById('ticker-count').textContent = allTickers.size;
+            
+            const tickersArray = Array.from(allTickers);
+            const batchSize = 50;
+            
+            for (let i = 0; i < tickersArray.length; i += batchSize) {
+                const batch = tickersArray.slice(i, i + batchSize).join(',');
+                const url = `https://api.polygon.io/v2/snapshot/locale/us/markets/stocks/tickers?tickers=${batch}&apiKey=${API_KEY}`;
+                
+                try {
+                    const response = await fetch(url);
+                    const data = await response.json();
+                    
+                    if (data.tickers) {
+                        data.tickers.forEach(t => {
+                            const price = t.day?.c || t.prevDay?.c || 0;
+                            const prevClose = t.prevDay?.c || price;
+                            
+                            preciosEnTiempoReal[t.ticker] = price;
+                            datosHistoricos[t.ticker] = {
+                                previousClose: prevClose,
+                                open: t.day?.o || prevClose,
+                                change: price - prevClose,
+                                changePercent: prevClose > 0 ? ((price - prevClose) / prevClose) * 100 : 0
+                            };
+                        });
+                    }
+                } catch (error) {
+                    log(`Error batch ${i}: ${error.message}`, 'error');
+                }
+                
+                // Pequeña pausa entre batches
+                if (i + batchSize < tickersArray.length) {
+                    await new Promise(r => setTimeout(r, 100));
+                }
+            }
+            
+            log(`✓ ${Object.keys(preciosEnTiempoReal).length} precios cargados`, 'success');
+            
+            // Calcular pesos
+            calcularPesos();
+            
+            // Renderizar ranking inicial
+            renderizarRanking();
+            
+            // Seleccionar primer activo
+            const primerActivo = INDICES_DATA[indiceActual].empresas[0];
+            if (primerActivo) {
+                cambiarActivo(primerActivo);
+            }
+        }
+
+        // ==========================================
+        // CALCULAR PESOS
+        // ==========================================
+        function calcularPesos() {
+            // DOW JONES - Price Weighted
+            calcularPesosDOW();
+            
+            // NASDAQ y S&P500 - Los pesos oficiales vienen de los índices
+            // Aquí usamos Market Cap como aproximación
+            calcularPesosMarketCap('nasdaq');
+            calcularPesosMarketCap('sp500');
+        }
+
+        function calcularPesosDOW() {
+            const empresas = INDICES_DATA.dow.empresas;
+            let totalPrecio = 0;
+            
+            // Sumar todos los precios
+            empresas.forEach(e => {
+                const precio = preciosEnTiempoReal[e.ticker] || 0;
+                e.price = precio;
+                totalPrecio += precio;
+                
+                const hist = datosHistoricos[e.ticker];
+                if (hist) {
+                    e.change = hist.change;
+                    e.changePercent = hist.changePercent;
+                }
+            });
+            
+            // Calcular weight (precio / total * 100)
+            if (totalPrecio > 0) {
+                empresas.forEach(e => {
+                    e.weight = (e.price / totalPrecio) * 100;
+                });
+            }
+            
+            // Ordenar por weight
+            empresas.sort((a, b) => b.weight - a.weight);
+        }
+
+        function calcularPesosMarketCap(indiceKey) {
+            const empresas = INDICES_DATA[indiceKey].empresas;
+            
+            // Actualizar precios y cambios
+            empresas.forEach(e => {
+                e.price = preciosEnTiempoReal[e.ticker] || 0;
+                const hist = datosHistoricos[e.ticker];
+                if (hist) {
+                    e.change = hist.change;
+                    e.changePercent = hist.changePercent;
+                }
+            });
+            
+            // Para NASDAQ y S&P, los pesos oficiales son diferentes del simple market cap
+            // Aquí asignamos pesos aproximados basados en el orden (top-heavy)
+            const totalEmpresas = empresas.length;
+            let totalWeight = 0;
+            
+            empresas.forEach((e, index) => {
+                // Distribución exponencial decreciente
+                e.weight = Math.pow(0.85, index) * 15;
+                totalWeight += e.weight;
+            });
+            
+            // Normalizar a 100%
+            empresas.forEach(e => {
+                e.weight = (e.weight / totalWeight) * 100;
+            });
+            
+            // Ya están ordenados por importancia/market cap
+        }
+
+        // ==========================================
+        // WEBSOCKET
+        // ==========================================
+        function conectarWebSocket() {
+            log('Conectando WebSocket...', 'info');
+            updateConnectionStatus(false, 'Connecting...');
+            
             socket = new WebSocket('wss://socket.polygon.io/stocks');
+            
             socket.onopen = () => {
-                document.getElementById('status').innerText = "🔥 LIVE";
                 socket.send(JSON.stringify({ action: 'auth', params: API_KEY }));
             };
+            
             socket.onmessage = (event) => {
-                const data = JSON.parse(event.data);
-                data.forEach((msg) => {
-                    if (msg.ev === 'status' && msg.status === 'auth_success') {
-                        socket.send(JSON.stringify({ action: 'subscribe', params: 'AM.AAPL,T.AAPL' }));
+                const latency = Date.now() - lastMessageTime;
+                lastMessageTime = Date.now();
+                
+                const messages = JSON.parse(event.data);
+                
+                messages.forEach(msg => {
+                    if (msg.ev === 'status') {
+                        if (msg.status === 'auth_success') {
+                            log('✓ WebSocket conectado', 'success');
+                            updateConnectionStatus(true, 'Connected', latency);
+                            reconnectAttempts = 0;
+                            suscribirTickers();
+                        } else if (msg.status === 'auth_failed') {
+                            log('✗ Auth failed', 'error');
+                            updateConnectionStatus(false, 'Auth Failed');
+                        }
+                        return;
                     }
-                    if (msg.ev === 'AM' && candleSeries) {
-                        candleSeries.update({ time: msg.s / 1000, open: msg.o, high: msg.h, low: msg.l, close: msg.c });
-                    }
+                    
                     if (msg.ev === 'T') {
-                        const priceEl = document.getElementById('price');
-                        const oldPrice = parseFloat(priceEl.innerText.replace('$', '')) || 0;
-                        priceEl.innerText = `$${msg.p.toFixed(2)}`;
-                        priceEl.className = `text-xl lg:text-2xl font-mono font-bold pulse ${msg.p >= oldPrice ? 'up' : 'down'}`;
-                        document.getElementById('latency').innerText = `${Date.now() - msg.t}ms`;
+                        procesarTrade(msg);
+                        updateLatency();
+                    }
+                    
+                    if (msg.ev === 'AM' && msg.sym === activoActual.ticker && candleSeries) {
+                        candleSeries.update({
+                            time: msg.s / 1000,
+                            open: msg.o,
+                            high: msg.h,
+                            low: msg.l,
+                            close: msg.c
+                        });
                     }
                 });
             };
-            socket.onclose = () => setTimeout(iniciarConexion, 1000);
+            
+            socket.onerror = () => {
+                log('WebSocket error', 'error');
+                updateConnectionStatus(false, 'Error');
+            };
+            
+            socket.onclose = () => {
+                log('WebSocket cerrado', 'warning');
+                updateConnectionStatus(false, 'Disconnected');
+                
+                if (reconnectAttempts < 5) {
+                    reconnectAttempts++;
+                    const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
+                    setTimeout(conectarWebSocket, delay);
+                }
+            };
         }
-        window.onload = crearGrafica;
+
+        function suscribirTickers() {
+            const allTickers = new Set();
+            Object.values(INDICES_DATA).forEach(indice => {
+                indice.empresas.forEach(e => allTickers.add(e.ticker));
+            });
+            
+            const subs = Array.from(allTickers).map(t => `T.${t},AM.${t}`).join(',');
+            socket.send(JSON.stringify({ action: 'subscribe', params: subs }));
+            log(`Suscrito a ${allTickers.size} tickers`, 'info');
+        }
+
+        function procesarTrade(msg) {
+            const ticker = msg.sym;
+            const price = msg.p;
+            
+            const oldPrice = preciosEnTiempoReal[ticker] || price;
+            preciosEnTiempoReal[ticker] = price;
+            
+            // Actualizar histórico
+            const hist = datosHistoricos[ticker];
+            if (hist) {
+                hist.change = price - hist.previousClose;
+                hist.changePercent = hist.previousClose > 0 ? 
+                    ((price - hist.previousClose) / hist.previousClose) * 100 : 0;
+            }
+            
+            tradeCount++;
+            document.getElementById('trade-count').textContent = tradeCount.toLocaleString();
+            
+            // Actualizar UI si es el activo actual
+            if (ticker === activoActual.ticker) {
+                actualizarPrecioUI(price, oldPrice);
+            }
+            
+            // Recalcular y re-renderizar (con debounce)
+            clearTimeout(window.rankingTimeout);
+            window.rankingTimeout = setTimeout(() => {
+                calcularPesos();
+                renderizarRanking();
+            }, 300);
+        }
+
+        function updateConnectionStatus(connected, text, latency = null) {
+            const dot = document.getElementById('connection-dot');
+            const status = document.getElementById('connection-status');
+            const latencyEl = document.getElementById('latency-display');
+            
+            dot.className = `status-dot ${connected ? 'status-connected' : 'status-disconnected'}`;
+            status.textContent = text;
+            status.className = `text-xs ${connected ? 'text-emerald-400' : 'text-zinc-400'}`;
+            
+            if (latency !== null && connected) {
+                latencyEl.textContent = `${latency}ms`;
+                latencyEl.classList.remove('hidden');
+            }
+        }
+
+        function updateLatency() {
+            const latency = Date.now() - lastMessageTime;
+            const latencyEl = document.getElementById('latency-display');
+            if (latency < 5000) {
+                latencyEl.textContent = `${Math.min(latency, 999)}ms`;
+            }
+        }
+
+        // ==========================================
+        // UI UPDATES
+        // ==========================================
+        function actualizarPrecioUI(precio, oldPrice = precio) {
+            const priceEl = document.getElementById('price');
+            const isUp = precio >= oldPrice;
+            
+            priceEl.textContent = `$${precio.toFixed(2)}`;
+            priceEl.className = `text-4xl font-bold mono ${isUp ? 'up pulse-up' : 'down pulse-down'}`;
+            
+            // Cambios
+            const hist = datosHistoricos[activoActual.ticker];
+            if (hist) {
+                const change = hist.change;
+                const changePct = hist.changePercent;
+                const positive = change >= 0;
+                const colorClass = positive ? 'up' : 'down';
+                const sign = positive ? '+' : '';
+                
+                document.getElementById('price-change').textContent = `${sign}${change.toFixed(2)}`;
+                document.getElementById('price-change').className = `font-semibold mono ${colorClass}`;
+                
+                document.getElementById('price-change-percent').textContent = `(${sign}${changePct.toFixed(2)}%)`;
+                document.getElementById('price-change-percent').className = `font-semibold mono ${colorClass}`;
+                
+                document.getElementById('arrow-indicator').textContent = positive ? '▲' : '▼';
+                document.getElementById('arrow-indicator').className = `text-2xl ${colorClass}`;
+            }
+            
+            document.getElementById('last-trade-time').textContent = new Date().toLocaleTimeString('en-US', { 
+                hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false 
+            });
+        }
+
+        function renderizarRanking() {
+            const container = document.getElementById('ranking-container');
+            const indice = INDICES_DATA[indiceActual];
+            const empresas = indice.empresas;
+            
+            document.getElementById('weight-method').textContent = indice.metodo;
+            
+            // Calcular total weight
+            const totalWeight = empresas.reduce((sum, e) => sum + e.weight, 0);
+            document.getElementById('total-weight').textContent = `${totalWeight.toFixed(2)}%`;
+            
+            container.innerHTML = '';
+            
+            empresas.forEach((empresa, index) => {
+                const isPositive = empresa.change >= 0;
+                const colorClass = isPositive ? 'up' : 'down';
+                const arrow = isPositive ? '▲' : '▼';
+                
+                const row = document.createElement('div');
+                row.className = `ranking-row ${empresa.ticker === activoActual.ticker ? 'active' : ''}`;
+                row.onclick = () => cambiarActivo(empresa);
+                
+                row.innerHTML = `
+                    <div class="font-bold text-zinc-500">${index + 1}</div>
+                    <div class="font-bold text-white">${empresa.ticker}</div>
+                    <div class="text-cyan-400 font-semibold mono">${empresa.weight.toFixed(2)}%</div>
+                    <div class="text-white mono font-medium">${empresa.price > 0 ? '$' + empresa.price.toFixed(2) : '--'}</div>
+                    <div class="${colorClass} mono">${empresa.change !== 0 ? (isPositive ? '+' : '') + empresa.change.toFixed(2) : '--'}</div>
+                    <div class="${colorClass} font-semibold">${arrow} ${Math.abs(empresa.changePercent).toFixed(2)}%</div>
+                `;
+                
+                container.appendChild(row);
+            });
+        }
+
+        function switchIndex(index) {
+            indiceActual = index;
+            
+            // Update tabs
+            document.querySelectorAll('.index-tab').forEach(tab => tab.classList.remove('active'));
+            document.getElementById(`tab-${index}`).classList.add('active');
+            
+            // Re-render
+            renderizarRanking();
+            
+            // Select first item
+            const primerActivo = INDICES_DATA[index].empresas[0];
+            if (primerActivo) {
+                cambiarActivo(primerActivo);
+            }
+            
+            log(`Índice: ${INDICES_DATA[index].nombre}`, 'info');
+        }
+
+        // ==========================================
+        // CAMBIAR ACTIVO
+        // ==========================================
+        async function cambiarActivo(empresa) {
+            if (isLoading) return;
+            isLoading = true;
+            
+            activoActual = empresa;
+            
+            // Update UI
+            document.getElementById('ticker-name').textContent = empresa.ticker;
+            document.getElementById('company-name').textContent = empresa.nombre;
+            document.getElementById('empresa-sector').textContent = empresa.sector;
+            document.getElementById('empresa-weight').textContent = `${empresa.weight.toFixed(2)}%`;
+            
+            // Badges de índices
+            const indices = obtenerIndicesEmpresa(empresa.ticker);
+            document.getElementById('empresa-indices').textContent = indices.join(', ') || 'N/A';
+            
+            const badgesContainer = document.getElementById('indices-badges');
+            badgesContainer.innerHTML = '';
+            indices.forEach(idx => {
+                const colors = {
+                    'DOW': 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
+                    'NASDAQ': 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30',
+                    'S&P500': 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                };
+                const badge = document.createElement('span');
+                badge.className = `text-[8px] px-1.5 py-0.5 rounded border ${colors[idx] || 'bg-zinc-700 text-zinc-300'}`;
+                badge.textContent = idx;
+                badgesContainer.appendChild(badge);
+            });
+            
+            // Rank en índice actual
+            const rank = INDICES_DATA[indiceActual].empresas.findIndex(e => e.ticker === empresa.ticker) + 1;
+            document.getElementById('empresa-rank').textContent = rank > 0 ? `#${rank}` : '--';
+            
+            // Histórico
+            const hist = datosHistoricos[empresa.ticker];
+            if (hist) {
+                document.getElementById('empresa-prev-close').textContent = `$${hist.previousClose.toFixed(2)}`;
+                document.getElementById('empresa-open').textContent = `$${hist.open.toFixed(2)}`;
+            }
+            
+            // Precio actual
+            const precio = preciosEnTiempoReal[empresa.ticker];
+            if (precio) {
+                actualizarPrecioUI(precio);
+            }
+            
+            // Re-render ranking para highlight
+            renderizarRanking();
+            
+            // Cargar gráfica
+            await cargarDatosGrafica(empresa.ticker);
+            
+            isLoading = false;
+        }
+
+        function obtenerIndicesEmpresa(ticker) {
+            const indices = [];
+            if (INDICES_DATA.dow.empresas.some(e => e.ticker === ticker)) indices.push('DOW');
+            if (INDICES_DATA.nasdaq.empresas.some(e => e.ticker === ticker)) indices.push('NASDAQ');
+            if (INDICES_DATA.sp500.empresas.some(e => e.ticker === ticker)) indices.push('S&P500');
+            return indices;
+        }
+
+        // ==========================================
+        // GRÁFICA
+        // ==========================================
+        function crearGrafica() {
+            const container = document.getElementById('chart-container');
+            
+            chart = LightweightCharts.createChart(container, {
+                layout: { 
+                    background: { color: 'transparent' }, 
+                    textColor: '#a1a1aa' 
+                },
+                grid: { 
+                    vertLines: { color: 'rgba(63, 63, 70, 0.3)' }, 
+                    horzLines: { color: 'rgba(63, 63, 70, 0.3)' } 
+                },
+                timeScale: { 
+                    timeVisible: true, 
+                    secondsVisible: true, 
+                    borderColor: '#27272a' 
+                },
+                rightPriceScale: { borderColor: '#27272a' },
+                crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+                autoSize: true
+            });
+            
+            candleSeries = chart.addCandlestickSeries({
+                upColor: '#10b981',
+                downColor: '#ef4444',
+                borderVisible: false,
+                wickUpColor: '#10b981',
+                wickDownColor: '#ef4444'
+            });
+
+            window.addEventListener('resize', () => {
+                chart.applyOptions({ width: container.clientWidth, height: container.clientHeight });
+            });
+        }
+
+        async function cargarDatosGrafica(ticker) {
+            const endDate = new Date();
+            const startDate = new Date();
+            startDate.setDate(startDate.getDate() - 5);
+            
+            const from = startDate.toISOString().split('T')[0];
+            const to = endDate.toISOString().split('T')[0];
+            
+            const url = `https://api.polygon.io/v2/aggs/ticker/${ticker}/range/1/minute/${from}/${to}?adjusted=true&sort=asc&limit=5000&apiKey=${API_KEY}`;
+            
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (data.results && data.results.length > 0) {
+                    const chartData = data.results.map(bar => ({
+                        time: bar.t / 1000,
+                        open: bar.o,
+                        high: bar.h,
+                        low: bar.l,
+                        close: bar.c
+                    }));
+                    
+                    candleSeries.setData(chartData);
+                    chart.timeScale().fitContent();
+                }
+            } catch (error) {
+                log(`Error gráfica: ${error.message}`, 'error');
+            }
+        }
+
+        // ==========================================
+        // INICIALIZACIÓN
+        // ==========================================
+        window.onload = async () => {
+            log('Trading Terminal v4.0 iniciado', 'success');
+            
+            crearGrafica();
+            
+            updateMarketIndicators();
+            setInterval(updateMarketIndicators, 30000);
+            
+            await cargarDatosIniciales();
+            
+            conectarWebSocket();
+        };
+        
+        window.onbeforeunload = () => {
+            if (socket) socket.close();
+        };
     </script>
 </body>
-</html>
